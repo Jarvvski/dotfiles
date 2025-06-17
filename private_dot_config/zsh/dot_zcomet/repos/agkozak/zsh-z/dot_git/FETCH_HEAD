@@ -1,0 +1,11 @@
+dd94ef04acc41748ba171eb219971cb455e0040b		branch 'master' of https://github.com/agkozak/zsh-z
+d48b47aa5de415c5ceb722b9f4d39845d5a151ae	not-for-merge	branch '600' of https://github.com/agkozak/zsh-z
+7f275aa8dde7e96df361d8ffbb3b7b43b53daa8b	not-for-merge	branch 'add-relative-paths' of https://github.com/agkozak/zsh-z
+d1a8e615620d5320312e4a0a2cf142f2ee7618ce	not-for-merge	branch 'develop' of https://github.com/agkozak/zsh-z
+fcc1c4e169b680458c8d0750fc6d7dbb3393fd23	not-for-merge	branch 'fix-clobber-on-no-space' of https://github.com/agkozak/zsh-z
+7e534aad95cb63d8a6ef1dc33cf65bf03b2143c3	not-for-merge	branch 'fuzzy' of https://github.com/agkozak/zsh-z
+ce152439cadd86712f8382233e2eec109add8166	not-for-merge	branch 'no-age' of https://github.com/agkozak/zsh-z
+3fc5867874d9e8585d8974762cf26a62f8f95942	not-for-merge	branch 'no_unset' of https://github.com/agkozak/zsh-z
+43b45e28e4460225df8cd4bfc88b27aa273f6483	not-for-merge	branch 'tilde' of https://github.com/agkozak/zsh-z
+57803136ed35e14217c21e3dd501750aa448871f	not-for-merge	branch 'zsh/files' of https://github.com/agkozak/zsh-z
+6bfe418332866d15373392164df11b4fbec2083f	not-for-merge	branch 'zshz_cd' of https://github.com/agkozak/zsh-z

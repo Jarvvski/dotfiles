@@ -1,0 +1,12 @@
+# pack-refs with: peeled fully-peeled sorted 
+d48b47aa5de415c5ceb722b9f4d39845d5a151ae refs/remotes/origin/600
+7f275aa8dde7e96df361d8ffbb3b7b43b53daa8b refs/remotes/origin/add-relative-paths
+3bab77e660a192420a7371183be33290f0211992 refs/remotes/origin/develop
+fcc1c4e169b680458c8d0750fc6d7dbb3393fd23 refs/remotes/origin/fix-clobber-on-no-space
+7e534aad95cb63d8a6ef1dc33cf65bf03b2143c3 refs/remotes/origin/fuzzy
+afaf2965b41fdc6ca66066e09382726aa0b6aa04 refs/remotes/origin/master
+ce152439cadd86712f8382233e2eec109add8166 refs/remotes/origin/no-age
+3fc5867874d9e8585d8974762cf26a62f8f95942 refs/remotes/origin/no_unset
+43b45e28e4460225df8cd4bfc88b27aa273f6483 refs/remotes/origin/tilde
+57803136ed35e14217c21e3dd501750aa448871f refs/remotes/origin/zsh/files
+6bfe418332866d15373392164df11b4fbec2083f refs/remotes/origin/zshz_cd

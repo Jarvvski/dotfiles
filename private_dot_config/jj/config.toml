@@ -1,0 +1,31 @@
+[user]
+name = "Adam Jarvis"
+email = "jarvis@sequencehq.com"
+
+[signing]
+behavior = "drop"
+backend = "gpg"
+key = "EA5A8AF46C557446"
+
+[git]
+#push-bookmark-prefix = "jarvis/"
+private-commits = "private"
+auto-local-bookmark = true
+sign-on-push = true
+
+[ui]
+default-command = ["diff", "-s"]
+#diff.tool = "bat"
+
+[aliases]
+yank = ["rebase", "--skip-emptied", "-s", "all:roots(mutable() & mine())", "-d", "trunk()"]
+forge = ["git", "push", "-r", "all:roots(mutable() & mine() & ~private & ~conflicts())"]
+fetch = ["git", "fetch"]
+push = ["git", "push", "--allow-new"]
+pa = ["git", "push", "--all"]
+ls = ["log", "-r", "@ | ancestors(trunk()..(mutable() & visible_heads() & mine()), 3) | trunk()"]
+rm = ["abandon"]
+
+[revset-aliases]
+immutable_heads = "builtin_immutable_heads() | (trunk().. & ~mine())"
+private = "description(glob:'wip:*')"

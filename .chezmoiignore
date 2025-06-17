@@ -1,0 +1,62 @@
+# ignore chezmoi db & config file (lol)
+.config/chezmoi/chezmoistate.boltdb
+.config/chezmoi/chezmoi.toml
+
+# Ignore ZCommet compiled files
+*.zwc
+*.zsh.zwc
+.config/zsh/.zcomet/
+.config/zsh/.zcompdump_*
+.config/zsh/.zcompcache/
+.config/zsh/*.zwc
+.config/zsh/modules/*.zwc
+
+# Ignore colima generated dirs & files
+.config/colima/_lima/
+.config/colima/_templates/
+.config/colima/docker.sock
+.config/colima/ssh_config
+# Allow traversal into 'default/'
+!.config/colima/default/
+# Ignore everything under 'default/'...
+.config/colima/default/**
+# ...except colima.yaml
+!.config/colima/default/colima.yaml
+
+# Ignore any gcloud stuff
+.config/gcloud/
+
+# Ignore any random fish (I don't use fish currently)
+.config/fish
+
+# Ignore karabiner generated dirs
+.config/karabiner/assets/
+.config/karabiner/automatic_backups/
+
+# GPG conf
+.gnupg/private-keys-v1.d/
+.gnupg/public-keys.d/
+.gnupg/reader_0.status
+.gnupg/S.gpg-agent/
+.gnupg/S.gpg-agent.browser/
+.gnupg/S.gpg-agent.extra/
+.gnupg/S.gpg-agent.ssh/
+.gnupg/S.keyboxd/
+.gnupg/S.scdaemon/
+.gnupg/trustdb.gpg
+.gnupg/sshcontrol
+
+# Ignore these entirely
+.config/ldcli/
+.config/software/
+.config/tmux/
+.config/uv/
+.config/composer/
+.config/docker/
+.config/gh/
+.config/iterm2/
+.config/jgit/
+
+# Ignore system-specific caches
+.cache/
+.DS_Store

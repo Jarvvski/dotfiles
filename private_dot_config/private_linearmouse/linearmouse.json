@@ -1,0 +1,74 @@
+{
+  "schemes" : [
+    {
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0xb034",
+          "vendorID" : "0x46d",
+          "serialNumber" : "E13D8E7B",
+          "productName" : "MX Master 3S"
+        }
+      },
+      "scrolling" : {
+        "reverse" : {
+          "vertical" : false
+        },
+        "acceleration" : {
+          "vertical" : 1
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "productName" : "Apple Internal Keyboard \/ Trackpad",
+          "vendorID" : "0x5ac",
+          "category" : "trackpad",
+          "productID" : "0x343"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 1
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "serialNumber" : "000000000000",
+          "category" : "mouse",
+          "productName" : "Razer Basilisk V3 Pro",
+          "vendorID" : "0x1532",
+          "productID" : "0xab"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 1
+        },
+        "reverse" : {
+          "vertical" : true
+        }
+      }
+    },
+    {
+      "scrolling" : {
+        "reverse" : {
+          "vertical" : true
+        }
+      },
+      "if" : {
+        "device" : {
+          "serialNumber" : "000000000000",
+          "productID" : "0xaa",
+          "vendorID" : "0x1532",
+          "category" : "mouse",
+          "productName" : "Razer Basilisk V3 Pro"
+        }
+      }
+    }
+  ],
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.10.0"
+}

@@ -1,0 +1,31 @@
+[user]
+	signingkey = EA5A8AF46C557446
+	name = Jarvis
+	email = jarvis@sequencehq.com
+# [commit]
+# 	gpgsign = true
+
+[core]
+    pager = delta
+    untrackedCache = true
+    fsMonitor = true
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true    # use n and N to move between diff sections
+    side-by-side = true
+
+
+    # delta detects terminal colors automatically; set one of these to disable auto-detection
+    # dark = true
+    # light = true
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default
+[init]
+	defaultBranch = main

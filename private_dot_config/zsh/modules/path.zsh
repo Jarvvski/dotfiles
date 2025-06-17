@@ -1,0 +1,5 @@
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/sbin:$PATH"
+export PATH="$HOME/.local/share/asdf/installs/rust/1.83.0/bin:$PATH"
+export PATH="$PATH:/Users/jarvis/Library/Application Support/JetBrains/Toolbox/scripts"

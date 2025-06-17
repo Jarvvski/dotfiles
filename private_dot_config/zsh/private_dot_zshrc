@@ -1,0 +1,36 @@
+setopt promptsubst
+
+export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
+
+# zcomet
+source "$ZDOTDIR/zcomet.zsh"
+
+# Configure path
+zcomet snippet "$ZDOTDIR/modules/path.zsh"
+
+# Start prompt
+zcomet snippet "$ZDOTDIR/modules/oh-my-posh.zsh"
+
+# Load other modules
+zcomet snippet "$ZDOTDIR/modules/history.zsh"
+zcomet snippet "$ZDOTDIR/modules/plugins.zsh"
+zcomet snippet "$ZDOTDIR/modules/git-aliases.zsh"
+zcomet snippet "$ZDOTDIR/modules/misc.zsh"
+zcomet snippet "$ZDOTDIR/modules/fzf.zsh"
+zcomet snippet "$ZDOTDIR/modules/asdf.zsh"
+zcomet snippet "$ZDOTDIR/modules/funcs.zsh"
+zcomet snippet "$ZDOTDIR/modules/natural-text-edit.zsh"
+zcomet snippet "$ZDOTDIR/modules/jj.zsh"
+zcomet snippet "$ZDOTDIR/modules/auth.zsh"
+zcomet snippet "$ZDOTDIR/modules/aliases.zsh"
+
+# Compile auto completions
+FPATH="$(/opt/homebrew/bin/brew --prefix)/share/zsh/site-functions:${FPATH}"
+zcomet compinit
+# specifically has to be loaded after compinit
+zcomet load Aloxaf/fzf-tab
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+eval "$(zoxide init zsh)"
+
+## I swear, if kandji loads that crap one more time..
+export PATH="/opt/homebrew/sbin:$PATH"

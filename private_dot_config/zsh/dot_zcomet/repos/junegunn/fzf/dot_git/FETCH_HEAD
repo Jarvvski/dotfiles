@@ -1,0 +1,6 @@
+93c029960666de2d1784f351ac37e5a74cf82e2e		branch 'master' of https://github.com/junegunn/fzf
+8ac6b2a3054fd74df5896aec246dbadc68f779d5	not-for-merge	branch 'dependabot/github_actions/crate-ci/typos-1.29.4' of https://github.com/junegunn/fzf
+f0f1038e68ebce966ca08c7602769fe380f038a4	not-for-merge	branch 'devel' of https://github.com/junegunn/fzf
+e8a39eeb0fce97a35cf4e751c8b7a25552066b83	not-for-merge	branch 'history-highlighted' of https://github.com/junegunn/fzf
+38040d43e4827e84e4a76f3014abf411ddc6c437	not-for-merge	branch 'leverage-bash-completion' of https://github.com/junegunn/fzf
+81366c548b28ddb9c8de1a2dc0fa9ae4766cc0ac	not-for-merge	branch 'zellij' of https://github.com/junegunn/fzf
