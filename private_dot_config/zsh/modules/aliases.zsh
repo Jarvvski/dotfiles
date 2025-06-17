@@ -15,6 +15,9 @@ alias ll="ls -l"
 alias lla="ls -la"
 
 # push any dotfiles changes up
-alias dotp='jj -R ~/.local/share/chezmoi git push'
+function dotp() {
+    jj -R ~/.local/share/chezmoi b set main -r 'git_head()'
+    jj -R ~/.local/share/chezmoi git push
+}
 alias dotu='~/.cron.sh'
-alias dotst='jj -R ~/.local/share/chezmoi status'
+alias dotst='jj -R ~/.local/share/chezmoi ls'
