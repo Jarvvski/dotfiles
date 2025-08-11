@@ -23,6 +23,8 @@ zcomet snippet "$ZDOTDIR/modules/natural-text-edit.zsh"
 zcomet snippet "$ZDOTDIR/modules/jj.zsh"
 zcomet snippet "$ZDOTDIR/modules/auth.zsh"
 zcomet snippet "$ZDOTDIR/modules/aliases.zsh"
+zcomet snippet "$ZDOTDIR/modules/colima.zsh"
+zcomet snippet "$ZDOTDIR/modules/aws.zsh"
 
 # Compile auto completions
 FPATH="$(/opt/homebrew/bin/brew --prefix)/share/zsh/site-functions:${FPATH}"

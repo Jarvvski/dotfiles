@@ -1,14 +1,13 @@
 [user]
 name = "Adam Jarvis"
-email = "jarvis@sequencehq.com"
+email = "ajarvis@ameba.ai"
 
 [signing]
 behavior = "drop"
 backend = "gpg"
-key = "EA5A8AF46C557446"
+key = "E94E14177DD0EFD265FDABCEC6337B9F8FD4854B"
 
 [git]
-#push-bookmark-prefix = "jarvis/"
 private-commits = "private"
 auto-local-bookmark = true
 sign-on-push = true
@@ -25,6 +24,11 @@ push = ["git", "push", "--allow-new"]
 pa = ["git", "push", "--all"]
 ls = ["log", "-r", "@ | ancestors(trunk()..(mutable() & visible_heads() & mine()), 3) | trunk()"]
 rm = ["abandon"]
+bc = ["bookmark", "create", "-r", "@", "concat(\"ajarvis/\", change_id.short())"]
+bcn = ["bookmark", "create", "r", "@"]
+
+[template-aliases]
+bookmark_prefix = "ajarvis/"
 
 [revset-aliases]
 immutable_heads = "builtin_immutable_heads() | (trunk().. & ~mine())"

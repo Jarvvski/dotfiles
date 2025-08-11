@@ -1,7 +1,7 @@
 [user]
-	signingkey = EA5A8AF46C557446
+	signingkey = C6337B9F8FD4854B
 	name = Jarvis
-	email = jarvis@sequencehq.com
+	email = ajarvis@ameba.ai
 # [commit]
 # 	gpgsign = true
 
