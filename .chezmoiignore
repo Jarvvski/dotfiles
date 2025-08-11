@@ -1,6 +1,5 @@
-# ignore chezmoi db & config file (lol)
+# ignore chezmoi db (lol)
 .config/chezmoi/chezmoistate.boltdb
-.config/chezmoi/chezmoi.toml
 
 # Ignore ZCommet compiled files
 *.zwc
@@ -11,17 +10,12 @@
 .config/zsh/*.zwc
 .config/zsh/modules/*.zwc
 
-# Ignore colima generated dirs & files
-.config/colima/_lima/
-.config/colima/_templates/
-.config/colima/docker.sock
-.config/colima/ssh_config
-# Allow traversal into 'default/'
-!.config/colima/default/
-# Ignore everything under 'default/'...
-.config/colima/default/**
-# ...except colima.yaml
-!.config/colima/default/colima.yaml
+# Ignore everything in .config/colima/
+.config/colima/**
+# Allow traversal into any subdirectory
+!.config/colima/*/
+# Allow any colima.yaml file in subdirectories
+!.config/colima/*/colima.yaml
 
 # Ignore any gcloud stuff
 .config/gcloud/
