@@ -54,3 +54,9 @@
 # Ignore system-specific caches
 .cache/
 .DS_Store
+**/.DS_Store
+
+# Ignore backup files
+**/*.bak
+**/*.backup
+**/*.bak-*
