@@ -1,0 +1,49 @@
+local wezterm = require("wezterm")
+local act = wezterm.action
+local M = {}
+-- you can put the rest of your Wezterm config here
+
+function M.setup(config)
+    config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
+    config.disable_default_key_bindings = false
+    config.hyperlink_rules = wezterm.default_hyperlink_rules()
+
+    -- Key bindings for macOS-style shortcuts
+    config.keys = {
+        -- Cmd+Left: Move to beginning of line (send custom sequence)
+        { key = 'LeftArrow', mods = 'CMD', action = act.SendString '\x01' },  -- Ctrl-A
+
+        -- Cmd+Right: Move to end of line (send custom sequence)
+        { key = 'RightArrow', mods = 'CMD', action = act.SendString '\x05' },  -- Ctrl-E
+
+        -- Shift+Left: Move to beginning of line (send custom sequence)
+        { key = 'LeftArrow', mods = 'SHIFT', action = act.SendString '\x01' },  -- Ctrl-A
+
+        -- Shift+Right: Move to end of line (send custom sequence)
+        { key = 'RightArrow', mods = 'SHIFT', action = act.SendString '\x05' },  -- Ctrl-E
+
+        -- Opt+Left: Move backward by word (send Alt-b)
+        { key = 'LeftArrow', mods = 'OPT', action = act.SendString '\x1bb' },  -- Alt-b
+
+        -- Opt+Right: Move forward by word (send Alt-f)
+        { key = 'RightArrow', mods = 'OPT', action = act.SendString '\x1bf' },  -- Alt-f
+
+        -- Cmd+Z: Undo (send custom sequence)
+        { key = 'z', mods = 'CMD', action = act.SendString '\x1f' },  -- Ctrl-_
+
+        -- Shift+Enter: Line continuation with backslash
+        { key = 'Enter', mods = 'SHIFT', action = act.SendString ' \\\n' },  -- space + backslash + newline
+    }
+
+    config.mouse_bindings = {
+        -- Ctrl-click will open the link under the mouse cursor
+        {
+            event = { Up = { streak = 1, button = "Left" } },
+            mods = "CTRL",
+            action = wezterm.action.OpenLinkAtMouseCursor,
+        },
+    }
+end
+
+-- return keys and mouse
+return M
