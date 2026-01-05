@@ -22,7 +22,7 @@ final_space = true
   white-blue = '#a9b1d6'
 
 [secondary_prompt]
-  template = ' ➜ '
+  template = '➜ '
   foreground = 'p:terminal-blue'
   background = 'transparent'
 

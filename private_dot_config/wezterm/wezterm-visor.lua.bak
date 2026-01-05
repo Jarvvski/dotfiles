@@ -1,0 +1,203 @@
+--------------------------------------
+--- __      __      _
+--- \ \    / /__ __| |_ ___ _ _ _ __
+---  \ \/\/ / -_)_ /  _/ -_) '_| '  \
+---   \_/\_/\___/__|\__\___|_| |_|_|_|
+---
+--- My Wezterm config file (Visor Mode)
+local wezterm = require("wezterm")
+
+local config = {}
+if wezterm.config_builder then
+  config = wezterm.config_builder()
+end
+
+-- Config setup (window_padding, etc.)
+config.window_padding = {
+  left = 25,
+  right = 25,
+  top = 25,
+  bottom = 25,
+}
+
+config.quit_when_all_windows_are_closed = false
+config.freetype_load_flags = 'NO_HINTING'
+config.front_end = "OpenGL"
+config.term = "wezterm"
+
+-- Visor-specific: Hide window decorations (no titlebar/traffic lights)
+config.window_decorations = "RESIZE"
+
+-- Plugin setup
+local theme = require("theme_warp_dark")
+local fonts = require("fonts")
+local keys = require("keys")
+
+fonts.setup(config)
+theme.setup(config)
+keys.setup(config)
+
+wezterm.on("format-tab-title", function(tab)
+  local legacy_digits = {
+    "🯰", "🯱", "🯲", "🯳", "🯴", "🯵", "🯶", "🯷", "🯸", "🯹"
+  }
+
+  local workspace_icon = legacy_digits[tab.tab_index + 1] or "🯰"
+
+  local raw_process_name = tab.active_pane.foreground_process_name or ""
+  local process_name = string.match(raw_process_name, "([^/\\]+)$") or "?"
+
+  -- We'll keep this separate for what gets displayed in the tab
+  local display_name = process_name
+
+  -- If it's a shell, override display_name with current folder
+  if process_name == "zsh" or process_name == "bash" or process_name == "fish" then
+    local cwd_uri = tab.active_pane.current_working_dir
+    if cwd_uri then
+      local cwd_string = tostring(cwd_uri)
+      local cwd_path = cwd_string:gsub("^file://", "")
+      cwd_path = cwd_path:gsub("/$", "") -- remove trailing slash
+
+      local home = os.getenv("HOME")
+      if home and cwd_path == home then
+        display_name = "~"
+      else
+        local folder_name = cwd_path:match(".*/(.*)") or cwd_path
+        display_name = folder_name
+      end
+    end
+  end
+
+  local icons = {
+    nvim =      { inactive = "", active = "" },
+    vim =       { inactive = "", active = "" },
+    zsh =       { inactive = "", active = "" },
+    bash =      { inactive = "", active = "" },
+    fish =      { inactive = "", active = "" },
+    node =      { inactive = "", active = "" },
+    python =    { inactive = "", active = "" },
+    ssh =       { inactive = "", active = "" },
+    tmux =      { inactive = "", active = "" },
+    lazygit =   { inactive = "", active = "" },
+
+    gradle =    { inactive = "", active = "" }, -- Gradle elephant (nf-custom-gradle)
+    cloudflared = { inactive = "󰇧", active = "󰇧" }, -- globe/flare (nf-md-cloud)
+
+    git =       { inactive = "", active = "" }, -- GitHub/CLI
+    docker =    { inactive = "", active = "" },
+    java =      { inactive = "", active = "" },
+    cargo =     { inactive = "", active = "" }, -- Rust/Cargo
+    go =        { inactive = "", active = "" },
+    kubectl =   { inactive = "󱃾", active = "󱃾" }, -- Kubernetes (nf-md-kubernetes)
+    pnpm =      { inactive = "󰣗", active = "󰣗" }, -- matching 'download box'
+  }
+
+  local icon_pair = icons[process_name] or { inactive = "", active = "" }
+  local icon = tab.is_active and icon_pair.active or icon_pair.inactive
+
+  local elements = {
+    { Text = " " .. workspace_icon .. " " },
+  }
+
+  if tab.is_active then
+    table.insert(elements, { Foreground = { Color = "#99D5D6" } })
+  end
+
+  table.insert(elements, { Text = icon })
+
+  if tab.is_active then
+    table.insert(elements, "ResetAttributes")
+  end
+
+  -- Truncate long display names
+  local max_length = 10
+  if #display_name > max_length then
+    display_name = display_name:sub(1, max_length - 1) .. "…"
+  end
+
+  table.insert(elements, { Text = " " .. display_name .. " " })
+
+  return elements
+end)
+
+local function make_progress_bar(percent, width)
+  local blocks = { " ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█" }
+  local bar = ""
+  local full = math.floor(percent * width)
+  local remainder = math.floor((percent * width - full) * (#blocks - 1)) + 1
+
+  for i = 1, width do
+    if i < full then
+      bar = bar .. blocks[#blocks]
+    elseif i == full then
+      bar = bar .. blocks[remainder]
+    else
+      bar = bar .. blocks[1]
+    end
+  end
+  return bar
+end
+
+wezterm.on("update-right-status", function(window, _)
+  local elements = {}
+
+  local battery = ""
+  local battery_color = "#7dcfff"
+  local success, output = wezterm.run_child_process({
+    "/bin/zsh",
+    "-c",
+    "pmset -g batt | grep -o '[0-9]*%'"
+  })
+
+  if success and output then
+    -- Remove extra spaces and format the output as battery percent
+    local battery_percent = output:match("([0-9]+)%%")
+    if battery_percent then
+      battery = string.format("󰚥 %s%%", battery_percent)
+      if tonumber(battery_percent) < 30 then
+        battery_color = "#f7768e" -- Red for low battery
+      end
+    end
+  end
+  table.insert(elements, { Foreground = { Color = battery_color } })
+  table.insert(elements, { Text = battery .. "  " })
+
+  -- 🎵 Spotify
+  local success, output, _ = wezterm.run_child_process({
+    "/bin/zsh",
+    "-c",
+    "osascript ~/.config/wezterm/spotify-progress.applescript"
+  })
+
+  if success and output and output ~= "" then
+    local track, artist, duration, position = output:match("^(.-)|(.-)|(.-)|(.-)\n?$")
+    duration = tonumber(duration)
+    position = tonumber(position)
+    local percent = math.min(1, position / duration)
+
+    local progress_bar = make_progress_bar(percent, 10)
+    local timestamp = string.format("[%02d:%02d / %02d:%02d]",
+      math.floor(position / 60000), math.floor(position / 1000) % 60,
+      math.floor(duration / 60000), math.floor(duration / 1000) % 60
+    )
+
+    if #track > 25 then track = track:sub(1, 22) .. "…" end
+
+    table.insert(elements, { Foreground = { Color = "#9ece6a" } })
+    table.insert(elements, { Text = progress_bar .. "  " })
+
+    table.insert(elements, { Background = { Color = "#7dcfff" } })
+    table.insert(elements, { Foreground = { Color = "#1A1B27" } })
+    table.insert(elements, { Text = " 🎵 " .. track .. " " })
+    table.insert(elements, "ResetAttributes")
+
+    table.insert(elements, { Foreground = { Color = "#444257" } })
+    table.insert(elements, { Text = " " .. timestamp .. "  " })
+  end
+
+  window:set_right_status(wezterm.format(elements))
+end)
+
+config.status_update_interval = 5
+
+return config

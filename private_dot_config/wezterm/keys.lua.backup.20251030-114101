@@ -31,8 +31,8 @@ function M.setup(config)
         -- Cmd+Z: Undo (send custom sequence)
         { key = 'z', mods = 'CMD', action = act.SendString '\x1f' },  -- Ctrl-_
 
-        -- Shift+Enter: Insert newline
-        { key = 'Enter', mods = 'SHIFT', action = act.SendString '\n' },  -- newline only
+        -- Shift+Enter: Line continuation with backslash
+        { key = 'Enter', mods = 'SHIFT', action = act.SendString ' \\\n' },  -- space + backslash + newline
 
         -- === Pane Management ===
         -- Cmd+T: Split pane to the right

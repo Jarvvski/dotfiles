@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Read(//Users/jarvis/.config/zsh/**)",
+      "Read(//Users/jarvis/.config/zsh/modules/**)",
+      "WebFetch(domain:wezfurlong.org)",
+      "WebFetch(domain:wezterm.org)",
+      "Read(//Users/jarvis/.config/ohmyposh/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

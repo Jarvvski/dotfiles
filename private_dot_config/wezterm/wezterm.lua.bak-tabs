@@ -53,9 +53,6 @@ wezterm.on("format-tab-title", function(tab)
   local raw_process_name = tab.active_pane.foreground_process_name or ""
   local process_name = string.match(raw_process_name, "([^/\\]+)$") or "?"
 
-  -- Debug: log process name to help troubleshoot icon issues
-  wezterm.log_info("Process: " .. process_name .. " | Raw: " .. raw_process_name)
-
   -- We'll keep this separate for what gets displayed in the tab
   local display_name = process_name
 
@@ -78,68 +75,44 @@ wezterm.on("format-tab-title", function(tab)
   end
 
   local icons = {
-    nvim =      { inactive = "󰕷", active = "󰕷" },
-    vim =       { inactive = "", active = "" },
-    zsh =       { inactive = "", active = "" },
-    bash =      { inactive = "", active = "" },
-    fish =      { inactive = "", active = "" },
-    node =      { inactive = "", active = "" },
-    python =    { inactive = "", active = "" },
-    ssh =       { inactive = "󰣀", active = "󰣀" },
-    tmux =      { inactive = "", active = "" },
-    lazygit =   { inactive = "󰊢", active = "󰊢" },
-    claude =    { inactive = "󰛨", active = "󰛨" }, -- Claude AI lightbulb
+    nvim =      { inactive = "", active = "" },
+    vim =       { inactive = "", active = "" },
+    zsh =       { inactive = "", active = "" },
+    bash =      { inactive = "", active = "" },
+    fish =      { inactive = "", active = "" },
+    node =      { inactive = "", active = "" },
+    python =    { inactive = "", active = "" },
+    ssh =       { inactive = "", active = "" },
+    tmux =      { inactive = "", active = "" },
+    lazygit =   { inactive = "", active = "" },
 
-    gradle =    { inactive = "", active = "" }, -- Gradle elephant
-    cloudflared = { inactive = "󰇧", active = "󰇧" }, -- globe/flare
+    gradle =    { inactive = "", active = "" }, -- Gradle elephant (nf-custom-gradle)
+    cloudflared = { inactive = "󰇧", active = "󰇧" }, -- globe/flare (nf-md-cloud)
 
-    git =       { inactive = "", active = "" }, -- GitHub/CLI
-    docker =    { inactive = "󰡨", active = "󰡨" },
-    java =      { inactive = "", active = "" },
-    cargo =     { inactive = "", active = "" }, -- Rust/Cargo
-    go =        { inactive = "󰟓", active = "󰟓" },
-    kubectl =   { inactive = "󱃾", active = "󱃾" }, -- Kubernetes
-    pnpm =      { inactive = "󰣗", active = "󰣗" }, -- matching download box
+    git =       { inactive = "", active = "" }, -- GitHub/CLI
+    docker =    { inactive = "", active = "" },
+    java =      { inactive = "", active = "" },
+    cargo =     { inactive = "", active = "" }, -- Rust/Cargo
+    go =        { inactive = "", active = "" },
+    kubectl =   { inactive = "󱃾", active = "󱃾" }, -- Kubernetes (nf-md-kubernetes)
+    pnpm =      { inactive = "󰣗", active = "󰣗" }, -- matching 'download box'
   }
 
-  local icon_pair = icons[process_name] or { inactive = "", active = "" }
+  local icon_pair = icons[process_name] or { inactive = "", active = "" }
   local icon = tab.is_active and icon_pair.active or icon_pair.inactive
 
-  -- Moonlight color scheme for tabs
-  -- Original colors (for reference/revert): Active fg = "#99D5D6" (cyan)
-  local bg_color = "#1e2030"  -- Moonlight dark bg
-  local fg_color = "#828bb8"  -- Moonlight muted text
-  local active_bg = "#3e68d7"  -- Moonlight blue
-  local active_fg = "#ffffff"  -- White text
-  local icon_color = "#82aaff"  -- Moonlight bright blue
+  local elements = {
+    { Text = " " .. workspace_icon .. " " },
+  }
 
-  local elements = {}
-
-  -- Set background color for the entire tab
   if tab.is_active then
-    table.insert(elements, { Background = { Color = active_bg } })
-    table.insert(elements, { Foreground = { Color = active_fg } })
-  else
-    table.insert(elements, { Background = { Color = bg_color } })
-    table.insert(elements, { Foreground = { Color = fg_color } })
+    table.insert(elements, { Foreground = { Color = "#99D5D6" } })
   end
 
-  -- Workspace icon
-  table.insert(elements, { Text = " " .. workspace_icon .. " " })
-
-  -- Process icon with special color
-  if tab.is_active then
-    table.insert(elements, { Foreground = { Color = "#c099ff" } })  -- Purple for active icon
-  else
-    table.insert(elements, { Foreground = { Color = icon_color } })
-  end
   table.insert(elements, { Text = icon })
 
-  -- Reset to tab colors
   if tab.is_active then
-    table.insert(elements, { Foreground = { Color = active_fg } })
-  else
-    table.insert(elements, { Foreground = { Color = fg_color } })
+    table.insert(elements, "ResetAttributes")
   end
 
   -- Truncate long display names
@@ -173,6 +146,15 @@ end
 
 wezterm.on("update-right-status", function(window, _)
   local elements = {}
+
+  -- Workspace name
+  local workspace = window:active_workspace()
+  if workspace ~= "default" then
+    table.insert(elements, { Foreground = { Color = "#82aaff" } })
+    table.insert(elements, { Text = "  " .. workspace .. "  " })
+    table.insert(elements, { Foreground = { Color = "#3e68d7" } })
+    table.insert(elements, { Text = "│ " })
+  end
 
   -- Battery status with error handling
   local battery = ""
@@ -239,24 +221,6 @@ wezterm.on("update-right-status", function(window, _)
         table.insert(elements, { Foreground = { Color = "#3e68d7" } })
         table.insert(elements, { Text = "│ " })
       end
-    end
-  end
-
-  -- Khal events remaining today
-  local events_success, events_output, stderr = wezterm.run_child_process({
-    "/bin/zsh",
-    "-c",
-    "khal list now eod --format '{title}' 2>/dev/null | wc -l | tr -d ' '"
-  })
-
-  if events_success and events_output and events_output ~= "" then
-    local event_count = tonumber(events_output:match("(%d+)"))
-    if event_count and event_count > 0 then
-      local event_color = "#bb9af7"  -- Purple for events
-      table.insert(elements, { Foreground = { Color = event_color } })
-      table.insert(elements, { Text = " " .. event_count .. " events  " })
-      table.insert(elements, { Foreground = { Color = "#3e68d7" } })
-      table.insert(elements, { Text = "│ " })
     end
   end
 

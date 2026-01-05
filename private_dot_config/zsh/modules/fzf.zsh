@@ -47,23 +47,23 @@ export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
   --info=inline-right \
   --ansi \
   --layout=reverse \
-  --border=none
-  --color=bg+:#1A1B27 \
-  --color=bg:#1A1B27 \
-  --color=border:#27a1b9 \
-  --color=fg:#c0caf5 \
-  --color=gutter:#1A1B27 \
-  --color=header:#ff9e64 \
-  --color=hl+:#2ac3de \
-  --color=hl:#2ac3de \
-  --color=info:#545c7e \
-  --color=marker:#ff007c \
-  --color=pointer:#ff007c \
-  --color=prompt:#2ac3de \
-  --color=query:#c0caf5:regular \
-  --color=scrollbar:#27a1b9 \
-  --color=separator:#ff9e64 \
-  --color=spinner:#ff007c \
+  --border=rounded \
+  --color=bg+:-1 \
+  --color=bg:-1 \
+  --color=border:#3e68d7 \
+  --color=fg:#c8d3f5 \
+  --color=gutter:-1 \
+  --color=header:#ffc777 \
+  --color=hl+:#82aaff \
+  --color=hl:#82aaff \
+  --color=info:#828bb8 \
+  --color=marker:#c099ff \
+  --color=pointer:#ff757f \
+  --color=prompt:#82aaff \
+  --color=query:#c8d3f5:regular \
+  --color=scrollbar:#3e68d7 \
+  --color=separator:#65bcff \
+  --color=spinner:#c099ff \
 "
 
 cd_to_dir() {

@@ -4,7 +4,7 @@
 ---  \ \/\/ / -_)_ /  _/ -_) '_| '  \
 ---   \_/\_/\___/__|\__\___|_| |_|_|_|
 ---
---- My Wezterm config file
+--- My Wezterm config file (Visor Mode)
 local wezterm = require("wezterm")
 
 local config = {}
@@ -16,7 +16,7 @@ end
 config.window_padding = {
   left = 25,
   right = 25,
-  top = 70,
+  top = 25,
   bottom = 25,
 }
 
@@ -31,8 +31,8 @@ config.inactive_pane_hsb = {
   brightness = 0.25,
 }
 
--- Normal mode: Show window decorations (titlebar with traffic lights)
-config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
+-- Visor-specific: Hide window decorations (no titlebar/traffic lights)
+config.window_decorations = "RESIZE"
 
 -- Plugin setup
 local theme = require("theme_warp_dark")
@@ -174,6 +174,15 @@ end
 wezterm.on("update-right-status", function(window, _)
   local elements = {}
 
+  -- Workspace name
+  local workspace = window:active_workspace()
+  if workspace ~= "default" then
+    table.insert(elements, { Foreground = { Color = "#82aaff" } })
+    table.insert(elements, { Text = "  " .. workspace .. "  " })
+    table.insert(elements, { Foreground = { Color = "#3e68d7" } })
+    table.insert(elements, { Text = "│ " })
+  end
+
   -- Battery status with error handling
   local battery = ""
   local battery_color = "#7dcfff"
@@ -208,7 +217,7 @@ wezterm.on("update-right-status", function(window, _)
   })
 
   if spotify_success and spotify_output and spotify_output ~= "" then
-    local track, artist, duration, position = spotify_output:match("^(.-)|(.-)|(.-)|(.-)%s*$")
+    local track, artist, duration, position = spotify_output:match("^(.-)|(.-)|(.-)|(.-)\n?$")
 
     -- Only show if we got valid data
     if track and duration and position then
@@ -239,24 +248,6 @@ wezterm.on("update-right-status", function(window, _)
         table.insert(elements, { Foreground = { Color = "#3e68d7" } })
         table.insert(elements, { Text = "│ " })
       end
-    end
-  end
-
-  -- Khal events remaining today
-  local events_success, events_output, stderr = wezterm.run_child_process({
-    "/bin/zsh",
-    "-c",
-    "khal list now eod --format '{title}' 2>/dev/null | wc -l | tr -d ' '"
-  })
-
-  if events_success and events_output and events_output ~= "" then
-    local event_count = tonumber(events_output:match("(%d+)"))
-    if event_count and event_count > 0 then
-      local event_color = "#bb9af7"  -- Purple for events
-      table.insert(elements, { Foreground = { Color = event_color } })
-      table.insert(elements, { Text = " " .. event_count .. " events  " })
-      table.insert(elements, { Foreground = { Color = "#3e68d7" } })
-      table.insert(elements, { Text = "│ " })
     end
   end
 

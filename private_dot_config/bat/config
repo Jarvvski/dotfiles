@@ -1,1 +1,17 @@
---theme="tokyonight_night"
+# Set the theme
+--theme="TwoDark"
+
+# Show line numbers, Git modifications and file header (but no grid)
+--style="numbers,changes,header"
+
+# Use italic text on the terminal
+--italic-text=always
+
+# Add mouse scrolling support in less (does not work with older versions of "less")
+--pager="less -FR"
+
+# Use C++ syntax highlighting for .ino files
+--map-syntax "*.ino:C++"
+
+# Use JSON syntax for .jsonl files
+--map-syntax "*.jsonl:JSON"

@@ -9,27 +9,66 @@ key = "E94E14177DD0EFD265FDABCEC6337B9F8FD4854B"
 
 [git]
 private-commits = "private"
-auto-local-bookmark = true
 sign-on-push = true
 
+[remotes.origin]
+auto-track-bookmarks = "glob:*"
+
 [ui]
-default-command = ["diff", "-s"]
-#diff.tool = "bat"
+default-command = ["ls"]
+diff-formatter = ["difft", "--color=always", "$left", "$right"]
+
+[snapshot]
+auto-update-stale = true
+
+[fsmonitor]
+backend="watchman"
+
+[fsmonitor.watchman]
+register-snapshot-trigger = true
 
 [aliases]
-yank = ["rebase", "--skip-emptied", "-s", "all:roots(mutable() & mine())", "-d", "trunk()"]
-forge = ["git", "push", "-r", "all:roots(mutable() & mine() & ~private & ~conflicts())"]
+weld = ["rebase", "--skip-emptied", "-s", "roots(mutable() & mine() & ::(mutable() & visible_heads() & mine()))", "-d", "main@origin"]
+smelt = ["git", "push", "--revisions", "all() ~ conflicts()"]
 fetch = ["git", "fetch"]
-push = ["git", "push", "--allow-new"]
+forge = ["util", "exec", "--", "sh", "-c", "jj fetch && jj weld && jj smelt"]
+push = ["git", "push"]
 pa = ["git", "push", "--all"]
 ls = ["log", "-r", "@ | ancestors(trunk()..(mutable() & visible_heads() & mine()), 3) | trunk()"]
 rm = ["abandon"]
 bc = ["bookmark", "create", "-r", "@", "concat(\"ajarvis/\", change_id.short())"]
-bcn = ["bookmark", "create", "r", "@"]
 
 [template-aliases]
 bookmark_prefix = "ajarvis/"
+'format_short_id(id)' = 'id.shortest(6)'
+'format_short_signature(signature)' = '''
+label("author",
+  if(signature.email() == "ajarvis@ameba.ai", "me",
+  if(signature.email() == "craigsmassie@gmail.com", "craig",
+  if(signature.email() == "craig@ameba.ai", "craig",
+  signature.email().local()))))
+'''
+'format_timestamp(timestamp)' = 'timestamp.local().format("%Y-%m-%d %H:%M")'
+'format_short_commit_header(commit)' = '''
+separate(" ",
+  format_short_change_id_with_hidden_and_divergent_info(commit),
+  format_short_signature(commit.author()),
+  format_timestamp(commit_timestamp(commit)),
+  commit.bookmarks(),
+  commit.tags().filter(|x| !x.name().starts_with("release-main-")),
+  commit.working_copies(),
+  if(commit.git_head(), label("git_head", "git_head()")),
+  format_short_commit_id(commit.commit_id()),
+  if(commit.conflict(), label("conflict", "conflict")),
+)
+'''
 
 [revset-aliases]
-immutable_heads = "builtin_immutable_heads() | (trunk().. & ~mine())"
 private = "description(glob:'wip:*')"
+recent = 'author_date(after:"7 days ago")'
+
+[revsets]
+immutable-heads = 'builtin_immutable_heads() | (trunk().. & ~mine()) | author_date(before:"2025-10-18")'
+short-prefixes = "(trunk()..@):: | (trunk()..(mutable() & visible_heads() & mine()))"
+log = "mine() | bookmarks() | ::trunk() | trunk().."
+#short-prefixes = "mine() | @.. | bookmarks() | ::trunk() | trunk().."

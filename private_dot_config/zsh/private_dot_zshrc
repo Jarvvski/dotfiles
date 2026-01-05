@@ -1,5 +1,8 @@
 setopt promptsubst
 
+# Load profiling support if enabled
+[[ -n "$PROFILE_ZSH" ]] && zmodload zsh/zprof
+
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
 # zcomet
@@ -19,20 +22,25 @@ zcomet snippet "$ZDOTDIR/modules/misc.zsh"
 zcomet snippet "$ZDOTDIR/modules/fzf.zsh"
 zcomet snippet "$ZDOTDIR/modules/asdf.zsh"
 zcomet snippet "$ZDOTDIR/modules/funcs.zsh"
+zcomet snippet "$ZDOTDIR/modules/khal.zsh"
 zcomet snippet "$ZDOTDIR/modules/natural-text-edit.zsh"
 zcomet snippet "$ZDOTDIR/modules/jj.zsh"
 zcomet snippet "$ZDOTDIR/modules/auth.zsh"
 zcomet snippet "$ZDOTDIR/modules/aliases.zsh"
 zcomet snippet "$ZDOTDIR/modules/colima.zsh"
 zcomet snippet "$ZDOTDIR/modules/aws.zsh"
+zcomet snippet "$ZDOTDIR/modules/completion.zsh"
 
 # Compile auto completions
 FPATH="$(/opt/homebrew/bin/brew --prefix)/share/zsh/site-functions:${FPATH}"
 zcomet compinit
-# specifically has to be loaded after compinit
-zcomet load Aloxaf/fzf-tab
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
-eval "$(zoxide init zsh)"
 
-## I swear, if kandji loads that crap one more time..
-export PATH="/opt/homebrew/sbin:$PATH"
+# Load fzf-tab plugin (must be after compinit)
+zcomet load Aloxaf/fzf-tab
+
+# Configure fzf-tab (must be after plugin load)
+zcomet snippet "$ZDOTDIR/modules/fzf-tab.zsh"
+
+# Load lazy-load after all plugins are ready
+zcomet snippet "$ZDOTDIR/modules/lazy-load.zsh"

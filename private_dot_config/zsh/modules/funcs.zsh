@@ -122,3 +122,85 @@ function monitor() {
     '
   fi
 }
+
+# Kill process on a specific port
+function killport() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: killport <port>"
+    return 1
+  fi
+  local pid=$(lsof -ti:$1)
+  if [[ -n "$pid" ]]; then
+    kill -9 $pid
+    echo "Killed process on port $1 (PID: $pid)"
+  else
+    echo "No process found on port $1"
+  fi
+}
+
+# Extract various archive formats
+function extract() {
+  if [[ ! -f "$1" ]]; then
+    echo "File not found: $1"
+    return 1
+  fi
+  case "$1" in
+    *.tar.bz2) tar xjf "$1" ;;
+    *.tar.gz)  tar xzf "$1" ;;
+    *.tar.xz)  tar xJf "$1" ;;
+    *.bz2)     bunzip2 "$1" ;;
+    *.rar)     unrar x "$1" ;;
+    *.gz)      gunzip "$1" ;;
+    *.tar)     tar xf "$1" ;;
+    *.tbz2)    tar xjf "$1" ;;
+    *.tgz)     tar xzf "$1" ;;
+    *.zip)     unzip "$1" ;;
+    *.Z)       uncompress "$1" ;;
+    *.7z)      7z x "$1" ;;
+    *) echo "Unknown archive format: $1" ;;
+  esac
+}
+
+# Quick note taker (creates dated markdown files)
+function note() {
+  local note_dir="$HOME/.notes"
+  local note_file="$note_dir/$(date +%Y-%m-%d).md"
+  mkdir -p "$note_dir"
+
+  if [[ -n "$*" ]]; then
+    echo -e "\n## $(date +%H:%M) - $*" >> "$note_file"
+  fi
+
+  ${EDITOR:-vim} "$note_file"
+}
+
+# Quick project opener with fzf
+function proj() {
+  local project_dirs=(
+    "$HOME/projects"
+    "$HOME/work"
+    "$HOME/code"
+    "$HOME/src"
+  )
+
+  # Find directories 2 levels deep in project directories
+  local selected=$(fd -t d -d 2 . "${project_dirs[@]}" 2>/dev/null | fzf --height 40% --reverse)
+
+  if [[ -n "$selected" ]]; then
+    cd "$selected" && ls
+  fi
+}
+
+# Git worktree switcher with fzf
+function gwt() {
+  if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo "Not in a git repository"
+    return 1
+  fi
+
+  local worktree=$(git worktree list | fzf --height 40% --reverse | awk '{print $1}')
+
+  if [[ -n "$worktree" ]]; then
+    cd "$worktree"
+  fi
+}
