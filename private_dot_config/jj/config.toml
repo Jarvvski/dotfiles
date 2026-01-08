@@ -51,7 +51,7 @@ label("author",
 'format_timestamp(timestamp)' = 'timestamp.local().format("%Y-%m-%d %H:%M")'
 'format_short_commit_header(commit)' = '''
 separate(" ",
-  format_short_change_id_with_hidden_and_divergent_info(commit),
+  format_short_change_id_with_change_offset(commit),
   format_short_signature(commit.author()),
   format_timestamp(commit_timestamp(commit)),
   commit.bookmarks(),
