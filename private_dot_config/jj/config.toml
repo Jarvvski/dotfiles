@@ -57,7 +57,7 @@ separate(" ",
   commit.bookmarks(),
   commit.tags().filter(|x| !x.name().starts_with("release-main-")),
   commit.working_copies(),
-  if(commit.git_head(), label("git_head", "git_head()")),
+  if(commit.contained_in('first_parent(@)'), label("git_head", "git_head()")),
   format_short_commit_id(commit.commit_id()),
   if(commit.conflict(), label("conflict", "conflict")),
 )

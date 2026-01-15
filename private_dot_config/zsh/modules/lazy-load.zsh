@@ -11,11 +11,14 @@ if (( $+functions[zsh-defer] )); then
 
   # Defer LaunchDarkly CLI completion
   zsh-defer eval "ldcli completion zsh"
+
+  zsh-defer eval "$(mise activate zsh)"
 else
   # Fallback: load immediately if zsh-defer not available
   eval "$(direnv hook zsh)"
   eval "$(zoxide init zsh)"
   eval "$(ldcli completion zsh)"
+  eval "$(mise activate zsh)"
 fi
 
 # Defer asdf shims (can be slow)
