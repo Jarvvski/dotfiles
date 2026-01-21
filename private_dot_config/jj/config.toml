@@ -37,6 +37,7 @@ pa = ["git", "push", "--all"]
 ls = ["log", "-r", "@ | ancestors(trunk()..(mutable() & visible_heads() & mine()), 3) | trunk()"]
 rm = ["abandon"]
 bc = ["bookmark", "create", "-r", "@", "concat(\"ajarvis/\", change_id.short())"]
+spr = ["util", "exec", "--", "spr"]
 
 [template-aliases]
 bookmark_prefix = "ajarvis/"

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# crontab hash: {{ include "private_dot_config/cron/crontab" | sha256sum }}
+set -euo pipefail
+crontab {{ .chezmoi.sourceDir }}/private_dot_config/cron/crontab

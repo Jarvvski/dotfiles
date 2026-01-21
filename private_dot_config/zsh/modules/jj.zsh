@@ -149,3 +149,6 @@ alias je="jj-edit"
 alias js="jj-show"
 alias jlog="jj-log"
 alias jop="jj-op"
+
+# Custom tools
+alias spr="jj-spr"
