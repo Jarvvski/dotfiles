@@ -112,43 +112,9 @@ jj-undo() {
   read -q && jj op undo "$(echo $op | awk '{print $1}')"
 }
 
-# Create bookmark with kebab-cased description
-bcn() {
-  local rev="@"
-
-  # Parse -r flag
-  while [[ $# -gt 0 ]]; do
-    case $1 in
-      -r)
-        rev="$2"
-        shift 2
-        ;;
-      *)
-        shift
-        ;;
-    esac
-  done
-
-  # Get description, lowercase, replace spaces/dots with hyphens, remove invalid chars
-  local desc=$(jj log -r "$rev" --no-graph -T 'description.first_line().lower()' | tr ' .' '-' | tr -cd 'a-z0-9-' | tr -s '-')
-
-  # Only truncate if >= 15 chars
-  if [[ ${#desc} -ge 15 ]]; then
-    desc=$(echo "$desc" | cut -c 1-20)
-  fi
-
-  # Strip trailing hyphen if present
-  desc="${desc%-}"
-
-  jj bookmark create -r "$rev" "ajarvis/${desc}"
-}
-
 # Aliases for convenience
 alias jd="jj-diff"
 alias je="jj-edit"
 alias js="jj-show"
 alias jlog="jj-log"
 alias jop="jj-op"
-
-# Custom tools
-alias spr="jj-spr"

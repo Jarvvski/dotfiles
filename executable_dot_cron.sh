@@ -20,6 +20,7 @@ chezmoi add ~/.claude/settings.json
 chezmoi add ~/.gnupg/
 chezmoi add ~/.zshenv
 chezmoi add ~/.local/bin/jj-spr
+chezmoi add ~/.local/bin/jj-bcn
 
 # Update brew file
 brew bundle dump --file ~/.Brewfile --force
