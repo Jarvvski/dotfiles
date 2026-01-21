@@ -15,6 +15,7 @@ chezmoi add ~/.config/nvim/
 chezmoi add ~/.config/ohmyposh/
 chezmoi add ~/.config/wezterm/
 chezmoi add ~/.config/cron/
+chezmoi add ~/.claude/settings.json
 
 chezmoi add ~/.gnupg/
 chezmoi add ~/.zshenv

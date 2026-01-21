@@ -1,5 +1,4 @@
 {
-  "alwaysThinkingEnabled": true,
   "hooks": {
     "PostToolUse": [
       {
@@ -12,5 +11,37 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/Users/jarvis/.claude/statusline-command.sh"
+  },
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(BASE_REF=origin/main ./gradlew -q dirtyProjects)",
+      "Bash(BASE_REF=origin/main ./gradlew -q deployableServices)",
+      "WebSearch",
+      "WebFetch(domain:docs.slack.dev)",
+      "Bash(cat:*)",
+      "Bash(mise run:*)",
+      "WebFetch(domain:protobuf.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:buf.build)",
+      "Bash(mise exec:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:openapi-generator.tech)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:hk.jdx.dev)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:habr.com)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "plan"
   }
 }
