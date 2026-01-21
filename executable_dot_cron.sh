@@ -21,6 +21,7 @@ chezmoi add ~/.gnupg/
 chezmoi add ~/.zshenv
 chezmoi add ~/.local/bin/jj-spr
 chezmoi add ~/.local/bin/jj-bcn
+chezmoi add ~/.local/bin/package.json
 
 # Update brew file
 brew bundle dump --file ~/.Brewfile --force

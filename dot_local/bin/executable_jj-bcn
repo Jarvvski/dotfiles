@@ -27,4 +27,15 @@ fi
 # Strip trailing hyphen if present
 desc="${desc%-}"
 
-jj bookmark create -r "$rev" "ajarvis/${desc}"
+bookmark_name="ajarvis/${desc}"
+
+if output=$(jj bookmark create -r "$rev" "$bookmark_name" 2>&1); then
+  echo "Created bookmark: $bookmark_name"
+else
+  if [[ "$output" == *"already exists"* ]]; then
+    echo "Bookmark already exists: $bookmark_name"
+  else
+    echo "$output" >&2
+    exit 1
+  fi
+fi

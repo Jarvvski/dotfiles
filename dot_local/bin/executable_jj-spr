@@ -7,6 +7,10 @@
  */
 
 import { $ } from "bun";
+import React, { useState, useEffect } from "react";
+import { render, Text, Box } from "ink";
+import Link from "ink-link";
+import { Spinner } from "@inkjs/ui";
 
 // Types
 interface Bookmark {
@@ -25,7 +29,7 @@ interface StackEntry {
 
 interface PRInfo {
   number: number;
-  url: string;
+  html_url: string;
   body: string;
   head: string;
   base: string;
@@ -57,8 +61,9 @@ async function ghApi<T>(endpoint: string, method = "GET", data?: object): Promis
 }
 
 async function getRepoInfo(): Promise<{ owner: string; repo: string }> {
-  const remote = await $`git remote get-url origin`.text();
-  const match = remote.trim().match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+  const result = await $`jj git remote list`.nothrow().quiet();
+  const output = result.stdout.toString();
+  const match = output.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
   if (!match) throw new Error("Could not parse GitHub remote URL");
   return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
 }
@@ -106,58 +111,53 @@ async function updatePR(prNumber: number, updates: { body?: string; base?: strin
 
 // JJ helpers
 async function getBookmarks(): Promise<Bookmark[]> {
-  // Get bookmarks that are between trunk and mine
-  const template = `
-    separate("\\t",
-      name,
-      commit_id.short(12),
-      change_id.short(12),
-      if(remote, "remote", "local")
-    ) ++ "\\n"
-  `.trim();
-
-  let output: string;
-  try {
-    output = await $`jj bookmark list -r "mine() ~ trunk()" -T ${template}`.text();
-  } catch {
-    return [];
-  }
+  const result = await $`jj bookmark list -r "mine() ~ trunk()"`.nothrow().quiet();
+  const output = result.stdout.toString();
 
   const bookmarks: Map<string, Bookmark> = new Map();
 
   for (const line of output.trim().split("\n")) {
     if (!line.trim()) continue;
-    const [name, commitId, changeId, location] = line.split("\t");
-    if (!name) continue;
+    // Skip indented lines (remote tracking info)
+    if (line.startsWith(" ")) continue;
 
-    const existing = bookmarks.get(name);
-    if (existing) {
-      if (location === "remote") {
-        existing.hasRemote = true;
-      }
-    } else {
-      bookmarks.set(name, {
-        name,
-        commitId,
-        changeId,
-        hasRemote: location === "remote",
-      });
-    }
+    // Format: "bookmark_name: change_id commit_id description"
+    const match = line.match(/^([^:]+):\s+(\w+)\s+(\w+)/);
+    if (!match) continue;
+
+    const [, name, changeId, commitId] = match;
+
+    bookmarks.set(name, {
+      name,
+      commitId,
+      changeId,
+      hasRemote: false,
+    });
   }
 
   return Array.from(bookmarks.values());
 }
 
 async function getBookmarkStack(targetBookmark: string): Promise<string[]> {
-  // Get all bookmarks in the path from trunk to target
+  // Get all bookmarks in the full stack (ancestors AND descendants)
   // Returns them in order from bottom (closest to trunk) to top
   const template = `
     bookmarks.map(|b| b.name() ++ "\\n")
   `.trim();
 
+  // First find the tip of the stack (highest descendant that has a bookmark)
+  let tipOutput: string;
+  try {
+    tipOutput = await $`jj log -r "heads(${targetBookmark}:: & bookmarks() & mine())" --no-graph -T ${template}`.text();
+  } catch {
+    tipOutput = targetBookmark;
+  }
+  const tip = tipOutput.trim().split("\n").filter((l) => l.trim())[0] || targetBookmark;
+
+  // Now get the full stack from trunk to tip
   let output: string;
   try {
-    output = await $`jj log -r "trunk()::${targetBookmark} ~ trunk()" --no-graph -T ${template}`.text();
+    output = await $`jj log -r "trunk()::${tip} ~ trunk()" --no-graph -T ${template}`.text();
   } catch {
     return [targetBookmark];
   }
@@ -185,31 +185,15 @@ function generateStackSection(
   stack: StackEntry[],
   currentBookmark: string
 ): string {
-  const lines: string[] = ["## Stack"];
+  const lines: string[] = ["## Stack", ""];
 
-  // Add trunk at the bottom
-  lines.push("");
-  lines.push("**trunk**");
-
-  // Add each bookmark in the stack
   for (const entry of stack) {
+    if (!entry.prNumber) continue;
     const isCurrent = entry.bookmark.name === currentBookmark;
-    if (entry.prUrl) {
-      if (isCurrent) {
-        lines.push(`↳ **${entry.bookmark.name}** ← this PR`);
-      } else {
-        lines.push(`↳ [${entry.bookmark.name}](${entry.prUrl})`);
-      }
-    } else {
-      if (isCurrent) {
-        lines.push(`↳ **${entry.bookmark.name}** ← this PR`);
-      } else {
-        lines.push(`↳ ${entry.bookmark.name}`);
-      }
-    }
+    const prefix = isCurrent ? "👉🏻 " : "";
+    lines.push(`- ${prefix}#${entry.prNumber}`);
   }
 
-  lines.push("");
   return lines.join("\n");
 }
 
@@ -254,7 +238,7 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
     stack.push({
       bookmark,
       prNumber: pr?.number,
-      prUrl: pr?.url,
+      prUrl: pr?.html_url,
     });
   }
 
@@ -299,8 +283,8 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
       if (!dryRun) {
         const pr = await createPR(entry.bookmark.name, baseBranch, title, body);
         entry.prNumber = pr.number;
-        entry.prUrl = pr.url;
-        console.log(`  Created PR #${pr.number}: ${pr.url}`);
+        entry.prUrl = pr.html_url;
+        console.log(`  Created PR #${pr.number}: ${pr.html_url}`);
       } else {
         console.log(`  [dry-run] Would create PR: ${title}`);
         console.log(`  [dry-run] Base: ${baseBranch}`);
@@ -324,6 +308,146 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
   }
 
   console.log("\nDone!");
+}
+
+async function getCurrentBookmark(): Promise<string | null> {
+  const result = await $`jj log -r @ --no-graph -T 'bookmarks'`.nothrow().quiet();
+  const output = result.stdout.toString().trim();
+  if (!output) return null;
+  // Take first bookmark if multiple
+  return output.split(/\s+/)[0];
+}
+
+// Ink UI for sync progress
+type SyncStatus = "pending" | "syncing" | "done" | "failed" | "skipped";
+
+interface SyncItem {
+  name: string;
+  prNumber?: number;
+  prUrl?: string;
+  status: SyncStatus;
+  error?: string;
+}
+
+function SyncUI({ items, dryRun }: { items: SyncItem[]; dryRun: boolean }) {
+  return (
+    <Box flexDirection="column">
+      <Text>{dryRun ? "Sync PRs (dry-run):" : "Syncing PRs:"}</Text>
+      {items.map((item) => (
+        <Box key={item.name}>
+          <Text>  </Text>
+          {item.status === "syncing" && <><Spinner label="" /><Text> </Text></>}
+          {item.status === "done" && <Text color="green">✓ </Text>}
+          {item.status === "failed" && <Text color="red">✗ </Text>}
+          {item.status === "pending" && <Text color="gray">· </Text>}
+          {item.status === "skipped" && <Text color="gray">· </Text>}
+          <Text
+            color={
+              item.status === "done" ? "green" :
+              item.status === "failed" ? "red" :
+              (item.status === "pending" || item.status === "skipped") ? "gray" :
+              undefined
+            }
+          >
+            {item.name}
+            {item.prNumber && item.prUrl ? (
+              <> <Link url={item.prUrl}>#{item.prNumber}</Link></>
+            ) : item.prNumber ? ` #${item.prNumber}` : ""}
+            {item.error ? ` - ${item.error}` : ""}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+async function syncAll(dryRun: boolean): Promise<void> {
+  const bookmarks = await getBookmarks();
+
+  if (bookmarks.length === 0) {
+    console.log("No bookmarks found");
+    return;
+  }
+
+  // Build initial items list (parallel PR lookups)
+  const items: SyncItem[] = await Promise.all(
+    bookmarks.map(async (bookmark) => {
+      const pr = await findPRForBranch(bookmark.name);
+      return {
+        name: bookmark.name,
+        prNumber: pr?.number,
+        prUrl: pr?.html_url,
+        status: pr ? "pending" : "skipped",
+      } as SyncItem;
+    })
+  );
+
+  // Render UI
+  const { rerender, unmount } = render(<SyncUI items={items} dryRun={dryRun} />);
+
+  // Mark all items with PRs as syncing
+  for (const item of items) {
+    if (item.status !== "skipped") {
+      item.status = "syncing";
+    }
+  }
+  rerender(<SyncUI items={items} dryRun={dryRun} />);
+
+  // Process all bookmarks in parallel
+  await Promise.all(
+    items.map(async (item) => {
+      if (item.status === "skipped") return;
+
+      try {
+        const bookmark = bookmarks.find((b) => b.name === item.name)!;
+        const pr = await findPRForBranch(bookmark.name);
+        if (!pr) {
+          item.status = "skipped";
+          rerender(<SyncUI items={items} dryRun={dryRun} />);
+          return;
+        }
+
+        const stackNames = await getBookmarkStack(bookmark.name);
+        const stack: StackEntry[] = (
+          await Promise.all(
+            stackNames.map(async (name) => {
+              const b = bookmarks.find((bm) => bm.name === name);
+              if (!b) return null;
+              const prInfo = await findPRForBranch(name);
+              return {
+                bookmark: b,
+                prNumber: prInfo?.number,
+                prUrl: prInfo?.html_url,
+              };
+            })
+          )
+        ).filter((entry): entry is StackEntry => entry !== null);
+
+        const stackSection = generateStackSection(stack, bookmark.name);
+        const newBody = updateBodyWithStack(pr.body || "", stackSection);
+
+        if (!dryRun) {
+          await updatePR(pr.number, { body: newBody });
+        }
+
+        item.status = "done";
+      } catch (e) {
+        item.status = "failed";
+        item.error = e instanceof Error ? e.message : "Unknown error";
+      }
+
+      rerender(<SyncUI items={items} dryRun={dryRun} />);
+    })
+  );
+
+  unmount();
+
+  const doneCount = items.filter((i) => i.status === "done").length;
+  const failedCount = items.filter((i) => i.status === "failed").length;
+
+  if (doneCount > 0 || failedCount > 0) {
+    console.log(`\n${dryRun ? "Would sync" : "Synced"} ${doneCount} PR(s)${failedCount > 0 ? `, ${failedCount} failed` : ""}`);
+  }
 }
 
 async function listStack(targetBookmark?: string): Promise<void> {
@@ -356,9 +480,9 @@ async function listStack(targetBookmark?: string): Promise<void> {
 // CLI
 const args = process.argv.slice(2);
 const command = args[0];
+const dryRun = args.includes("--dry-run") || args.includes("-n");
 
 if (command === "submit" || command === "s") {
-  const dryRun = args.includes("--dry-run") || args.includes("-n");
   const bookmark = args.find((a) => !a.startsWith("-") && a !== "submit" && a !== "s");
 
   if (!bookmark) {
@@ -367,21 +491,33 @@ if (command === "submit" || command === "s") {
   }
 
   await submit(bookmark, dryRun);
-} else if (command === "list" || command === "ls" || !command) {
+} else if (command === "list" || command === "ls") {
   const bookmark = args.find((a) => !a.startsWith("-") && a !== "list" && a !== "ls");
   await listStack(bookmark);
+} else if (command === "sync") {
+  await syncAll(dryRun);
 } else if (command === "help" || command === "-h" || command === "--help") {
   console.log(`jj-pr-stack - Manage stacked PRs with Jujutsu
 
 Usage:
-  jj-pr-stack [list] [bookmark]     List bookmarks or show stack for a bookmark
-  jj-pr-stack submit <bookmark>     Push and create/update PRs for the stack
-  jj-pr-stack submit <bookmark> -n  Dry run (show what would happen)
+  jj-pr-stack                       Submit PRs for current bookmark's stack
+  jj-pr-stack --dry-run             Dry run for current bookmark
+  jj-pr-stack list [bookmark]       List bookmarks or show stack
+  jj-pr-stack submit <bookmark>     Submit PRs for specified bookmark's stack
+  jj-pr-stack sync                  Update all existing PRs with stack info
 
 Options:
   -n, --dry-run    Show what would happen without making changes
   -h, --help       Show this help message
 `);
+} else if (!command || command.startsWith("-")) {
+  // No command or just flags - submit current bookmark
+  const bookmark = await getCurrentBookmark();
+  if (!bookmark) {
+    console.error("No bookmark on current revision. Create one with: jj bc");
+    process.exit(1);
+  }
+  await submit(bookmark, dryRun);
 } else {
   console.error(`Unknown command: ${command}`);
   console.error("Run 'jj-pr-stack help' for usage");
