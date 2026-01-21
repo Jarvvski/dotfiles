@@ -20,6 +20,10 @@ function dotp() {
     jj -R ~/.local/share/chezmoi b set main -r @
     jj -R ~/.local/share/chezmoi git push --branch main
 }
+function dotf() {
+    jj -R ~/.local/share/chezmoi git fetch
+    jj -R ~/.local/share/chezmoi new main
+}
 alias dotu='~/.cron.sh'
 alias dotst='jj -R ~/.local/share/chezmoi ls'
 
