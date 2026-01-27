@@ -176,10 +176,116 @@ end
 -- KEYBINDINGS
 -- ============================================
 
--- WezTerm Visor (preferred)
-hs.hotkey.bind({ 'command' }, '§', safeCall(weztermVisorHandler, "WezTerm visor toggle failed"))
-hs.hotkey.bind({ 'command' }, '`', safeCall(weztermVisorHandler, "WezTerm visor toggle failed"))
+-- WezTerm Visor (disabled — using Kitty visor instead, uncomment to restore)
+-- hs.hotkey.bind({ 'command' }, '§', safeCall(weztermVisorHandler, "WezTerm visor toggle failed"))
+-- hs.hotkey.bind({ 'command' }, '`', safeCall(weztermVisorHandler, "WezTerm visor toggle failed"))
 
--- Alternative: Regular Kitty dropdown (if you use it)
--- local kittyDropdown = createDropdownHandler('net.kovidgoyal.kitty')
--- hs.hotkey.bind({'command'}, 'escape', safeCall(kittyDropdown, "Kitty dropdown failed"))
+-- ============================================
+-- KITTY VISOR HANDLER (standalone app bundle, with state tracking)
+-- ============================================
+
+if not _G.dropdownKittyWindow then
+  _G.dropdownKittyWindow = nil
+end
+
+local function kittyVisorHandler()
+  local BUNDLE_ID = 'net.kovidgoyal.kitty.visor'
+
+  local function getWindowById(windowId)
+    if windowId then
+      return hs.window.get(windowId)
+    end
+    return nil
+  end
+
+  local kittyApp = hs.application.get(BUNDLE_ID)
+  local dropdownWin = nil
+
+  if _G.dropdownKittyWindow then
+    dropdownWin = getWindowById(_G.dropdownKittyWindow)
+    if not dropdownWin then
+      _G.dropdownKittyWindow = nil
+    end
+  end
+
+  local focusedWin = hs.window.focusedWindow()
+  local isDropdownFocused = dropdownWin and focusedWin and dropdownWin:id() == focusedWin:id()
+
+  if isDropdownFocused and kittyApp then
+    kittyApp:hide()
+  else
+    local space = spaces.activeSpaceOnScreen()
+    local mainScreen = hs.screen.mainScreen()
+
+    if dropdownWin then
+      if kittyApp then
+        kittyApp:unhide()
+        dropdownWin:focus()
+        moveWindowToSpace(kittyApp, dropdownWin, space, mainScreen)
+      end
+    else
+      if kittyApp == nil then
+        local kittyBin = os.getenv("HOME") .. "/Applications/Visor.app/Contents/MacOS/kitty"
+        local task = hs.task.new(kittyBin, nil, {
+          "--single-instance=no",
+          "--directory", os.getenv("HOME"),
+          "-o", "allow_remote_control=yes",
+          "-o", "listen_on=unix:/tmp/kitty-visor",
+          "-o", "hide_window_decorations=yes",
+          "-o", "window_padding_width=25",
+          "-o", "confirm_os_window_close=0",
+          "--detach",
+        })
+        task:start()
+
+        local appWatcher = nil
+        appWatcher = hs.application.watcher.new(function(name, event, app)
+          if event == hs.application.watcher.launched and app:bundleID() == BUNDLE_ID then
+            hs.timer.doAfter(0.5, function()
+              local newWindow = app:mainWindow()
+              if newWindow then
+                _G.dropdownKittyWindow = newWindow:id()
+                newWindow:move(hs.geometry({ x = 0, y = 0, w = 1, h = 0.65 }))
+                moveWindowToSpace(app, newWindow, space, mainScreen)
+              end
+            end)
+            appWatcher:stop()
+          end
+        end)
+        appWatcher:start()
+      else
+        local allWindows = kittyApp:allWindows()
+        if #allWindows > 0 then
+          local existingWin = allWindows[1]
+          _G.dropdownKittyWindow = existingWin:id()
+          kittyApp:unhide()
+          existingWin:focus()
+          moveWindowToSpace(kittyApp, existingWin, space, mainScreen)
+        else
+          -- App is running but all windows are gone — create a new one
+          local kittenBin = os.getenv("HOME") .. "/Applications/Visor.app/Contents/MacOS/kitten"
+          local task = hs.task.new(kittenBin, nil, {
+            "@", "--to", "unix:/tmp/kitty-visor",
+            "launch", "--type=os-window", "--cwd=" .. os.getenv("HOME"),
+          })
+          task:start()
+          hs.timer.doAfter(0.5, function()
+            local newWindows = kittyApp:allWindows()
+            if #newWindows > 0 then
+              local newWin = newWindows[1]
+              _G.dropdownKittyWindow = newWin:id()
+              newWin:move(hs.geometry({ x = 0, y = 0, w = 1, h = 0.65 }))
+              local currentSpace = spaces.activeSpaceOnScreen()
+              local screen = hs.screen.mainScreen()
+              moveWindowToSpace(kittyApp, newWin, currentSpace, screen)
+            end
+          end)
+        end
+      end
+    end
+  end
+end
+
+-- Kitty Visor
+hs.hotkey.bind({ 'command' }, '§', safeCall(kittyVisorHandler, "Kitty visor toggle failed"))
+hs.hotkey.bind({ 'command' }, '`', safeCall(kittyVisorHandler, "Kitty visor toggle failed"))

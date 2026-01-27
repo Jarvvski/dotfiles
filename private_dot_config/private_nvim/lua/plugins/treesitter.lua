@@ -1,41 +1,27 @@
 return {
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main",
     build = ":TSUpdate",
     config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = {
-          "lua",
-          "vim",
-          "vimdoc",
-          "javascript",
-          "typescript",
-          "tsx",
-          "python",
-          "rust",
-          "go",
-          "bash",
-          "json",
-          "yaml",
-          "toml",
-          "markdown",
-          "markdown_inline",
-        },
-        auto_install = true,
-        highlight = {
-          enable = true,
-          additional_vim_regex_highlighting = false,
-        },
-        indent = { enable = true },
-        incremental_selection = {
-          enable = true,
-          keymaps = {
-            init_selection = "<C-space>",
-            node_incremental = "<C-space>",
-            scope_incremental = false,
-            node_decremental = "<bs>",
-          },
-        },
+      require("nvim-treesitter").setup()
+
+      local installed = require("nvim-treesitter").get_installed()
+      local wanted = {
+        "javascript", "typescript", "tsx", "kotlin", "python",
+        "rust", "go", "bash", "json", "yaml", "toml",
+      }
+      local missing = vim.tbl_filter(function(lang)
+        return not vim.list_contains(installed, lang)
+      end, wanted)
+      if #missing > 0 then
+        require("nvim-treesitter").install(missing)
+      end
+
+      vim.api.nvim_create_autocmd("FileType", {
+        callback = function(args)
+          pcall(vim.treesitter.start, args.buf)
+        end,
       })
     end,
   },

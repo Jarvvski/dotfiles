@@ -75,12 +75,14 @@ return {
       local wk = require("which-key")
       wk.setup()
       wk.add({
+        { "<leader>d", group = "Diagnostics" },
         { "<leader>f", group = "Find" },
         { "<leader>g", group = "Git" },
         { "<leader>l", group = "LSP" },
         { "<leader>b", group = "Buffer" },
         { "<leader>t", group = "Terminal" },
         { "<leader>h", group = "Harpoon" },
+        { "<leader>x", group = "Quickfix" },
       })
     end,
   },
@@ -89,6 +91,9 @@ return {
   {
     "rcarriga/nvim-notify",
     config = function()
+      require("notify").setup({
+        background_colour = "#000000",
+      })
       vim.notify = require("notify")
     end,
   },

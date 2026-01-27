@@ -6,13 +6,13 @@ rev="@"
 # Parse -r flag
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -r)
-      rev="$2"
-      shift 2
-      ;;
-    *)
-      shift
-      ;;
+  -r)
+    rev="$2"
+    shift 2
+    ;;
+  *)
+    shift
+    ;;
   esac
 done
 
@@ -27,7 +27,21 @@ fi
 # Strip trailing hyphen if present
 desc="${desc%-}"
 
-bookmark_name="ajarvis/${desc}"
+if [[ -z "$desc" ]]; then
+  jj describe -r "$rev"
+  # Re-read description after editor closes
+  desc=$(jj log -r "$rev" --no-graph -T 'description.first_line().lower()' | tr ' .' '-' | tr -cd 'a-z0-9-' | tr -s '-')
+  if [[ ${#desc} -ge 15 ]]; then
+    desc=$(echo "$desc" | cut -c 1-20)
+  fi
+  desc="${desc%-}"
+  if [[ -z "$desc" ]]; then
+    echo "Still no description — aborting" >&2
+    exit 1
+  fi
+fi
+
+bookmark_name="adam/${desc}"
 
 if output=$(jj bookmark create -r "$rev" "$bookmark_name" 2>&1); then
   echo "Created bookmark: $bookmark_name"

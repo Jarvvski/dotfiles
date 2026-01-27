@@ -35,32 +35,6 @@ return {
     end,
   },
 
-  -- File explorer
-  {
-    "nvim-tree/nvim-tree.lua",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      require("nvim-tree").setup({
-        view = {
-          width = 35,
-        },
-        renderer = {
-          group_empty = true,
-          icons = {
-            show = {
-              folder_arrow = false,
-            },
-          },
-        },
-        filters = {
-          dotfiles = false,
-        },
-      })
-
-      vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle file explorer" })
-    end,
-  },
-
   -- Auto pairs
   {
     "windwp/nvim-autopairs",

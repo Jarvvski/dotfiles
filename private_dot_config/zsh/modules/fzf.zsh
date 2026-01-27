@@ -40,7 +40,7 @@ _fzf_comprun() {
 }
 
 # ---- Eza (better ls) -----
-alias ls="eza --color=always --git --no-filesize --icons=always --no-time --no-user --no-permissions"
+alias ls="eza --color=always --git --icons=always"
 
 export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
   --highlight-line \

@@ -43,8 +43,8 @@ keymap.set("v", ">", ">gv")
 -- Diagnostic keymaps
 keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous diagnostic" })
 keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next diagnostic" })
-keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic error" })
-keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic quickfix" })
+keymap.set("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show diagnostic error" })
+keymap.set("n", "<leader>xl", vim.diagnostic.setloclist, { desc = "Open diagnostic quickfix" })
 
 -- File operations
 keymap.set("n", "<leader>w", "<cmd>w<CR>", { desc = "Save file" })

@@ -1,4 +1,8 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_STREAM_IDLE_TIMEOUT_MS": "600000"
+  },
   "permissions": {
     "allow": [
       "Bash(./gradlew:*)",
@@ -6,34 +10,47 @@
       "Bash(BASE_REF=origin/main ./gradlew -q deployableServices)",
       "WebSearch",
       "WebFetch(domain:docs.slack.dev)",
-      "Bash(cat:*)",
       "Bash(mise run:*)",
       "WebFetch(domain:protobuf.dev)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:buf.build)",
       "Bash(mise exec:*)",
-      "Bash(find:*)",
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:openapi-generator.tech)",
-      "Bash(ls:*)",
-      "Bash(xargs:*)",
-      "Bash(grep:*)",
       "WebFetch(domain:hk.jdx.dev)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:habr.com)"
+      "WebFetch(domain:habr.com)",
+      "Bash(jj:*)",
+      "Bash(rg:*)",
+      "Bash(jq:*)",
+      "Bash(gh api *)",
+      "Bash(gh pr *)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(git:*)"
+    ],
     "ask": [],
-    "defaultMode": "plan"
+    "defaultMode": "auto"
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | { read cmd; case \"$cmd\" in git\\ *|git) echo 'BLOCK: Use jj, not git.' >&2; exit 2 ;; grep\\ *|grep) echo 'BLOCK: Use the built-in Grep tool, not grep via Bash.' >&2; exit 2 ;; esac; if echo \"$cmd\" | grep -qE '\\|\\s*git(\\s|$)'; then echo 'BLOCK: Use jj, not git.' >&2; exit 2; fi; }"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read file_path; touch \"$file_path\" 2>/dev/null & }"
+            "command": "jq -r '.tool_input.file_path' | { read fp; case \"$fp\" in *.kt) ktlint \"$fp\" 2>&1 | head -10 ;; *.py) ruff check \"$fp\" 2>&1 | head -10 ;; *.ts|*.tsx) prettier --check \"$fp\" 2>&1 | head -5 ;; esac; } || true"
           }
         ]
       }
@@ -43,5 +60,17 @@
     "type": "command",
     "command": "/Users/jarvis/.claude/statusline-command.sh"
   },
-  "alwaysThinkingEnabled": true
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "kotlin-lsp@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "xhigh",
+  "remoteControlAtStartup": false,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true
 }

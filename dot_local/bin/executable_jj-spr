@@ -25,6 +25,7 @@ interface StackEntry {
   parent?: string; // parent bookmark name
   prNumber?: number;
   prUrl?: string;
+  isMerged?: boolean;
 }
 
 interface PRInfo {
@@ -33,6 +34,8 @@ interface PRInfo {
   body: string;
   head: string;
   base: string;
+  state: string;
+  merged_at: string | null;
 }
 
 // GitHub API helpers using gh CLI
@@ -78,11 +81,13 @@ async function findPRForBranch(branch: string): Promise<PRInfo | null> {
   const { owner, repo } = await getRepoInfo();
   try {
     const prs = await ghApi<PRInfo[]>(
-      `repos/${owner}/${repo}/pulls?head=${owner}:${branch}&state=open`
+      `repos/${owner}/${repo}/pulls?head=${owner}:${branch}&state=all&sort=updated&direction=desc`
     );
-    if (prs.length > 0) {
-      return prs[0];
-    }
+    // Prefer open PR, then merged, skip closed-not-merged
+    const open = prs.find((pr) => pr.state === "open");
+    if (open) return open;
+    const merged = prs.find((pr) => pr.merged_at !== null);
+    if (merged) return merged;
   } catch {
     // No PR found
   }
@@ -113,7 +118,8 @@ async function updatePR(prNumber: number, updates: { body?: string; base?: strin
 
 // JJ helpers
 async function getBookmarks(): Promise<Bookmark[]> {
-  const result = await $`jj bookmark list -r "mine() ~ trunk()"`.nothrow().quiet();
+  const revset = process.env.JJ_SPR_REVSET || "mine() ~ trunk()";
+  const result = await $`jj bookmark list -r ${revset}`.nothrow().quiet();
   const output = result.stdout.toString();
 
   const bookmarks: Map<string, Bookmark> = new Map();
@@ -159,7 +165,7 @@ async function getBookmarkStack(targetBookmark: string): Promise<string[]> {
   // Now get the full stack from trunk to tip
   let output: string;
   try {
-    output = await $`jj log -r "trunk()::${tip} ~ trunk()" --no-graph -T ${template}`.text();
+    output = await $`jj log -r "trunk()..${tip}" --no-graph -T ${template}`.text();
   } catch {
     return [targetBookmark];
   }
@@ -211,7 +217,8 @@ function generateStackSection(
     if (!entry.prNumber) continue;
     const isCurrent = entry.bookmark.name === currentBookmark;
     const prefix = isCurrent ? "👉🏻 " : "";
-    lines.push(`- ${prefix}#${entry.prNumber}`);
+    const ref = entry.isMerged ? `~~#${entry.prNumber}~~` : `#${entry.prNumber}`;
+    lines.push(`- ${prefix}${ref}`);
   }
 
   return lines.join("\n");
@@ -219,7 +226,8 @@ function generateStackSection(
 
 function updateBodyWithStack(existingBody: string, stackSection: string): string {
   // Remove existing stack section if present
-  const stackRegex = /## Stack\n[\s\S]*?(?=\n## |\n*$)/;
+  // Handle both LF and CRLF line endings (GitHub API may return either)
+  const stackRegex = /## Stack\r?\n[\s\S]*?(?=\r?\n## |\s*$)/;
   const cleanBody = existingBody.replace(stackRegex, "").trim();
 
   // Add new stack section at the end
@@ -255,16 +263,18 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
     if (!bookmark) continue;
 
     const pr = await findPRForBranch(name);
+    const isMerged = pr?.merged_at !== null && pr?.merged_at !== undefined;
     stack.push({
       bookmark,
       prNumber: pr?.number,
       prUrl: pr?.html_url,
+      isMerged,
     });
     items.push({
       name,
       prNumber: pr?.number,
       prUrl: pr?.html_url,
-      status: "pending",
+      status: isMerged ? "done" : "pending",
       isNew: !pr,
     });
   }
@@ -281,6 +291,9 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
     const entry = stack[i];
     const item = items[i];
     const baseBranch = i === 0 ? defaultBranch : stack[i - 1].bookmark.name;
+
+    // Skip merged PRs - they're already done
+    if (entry.isMerged) continue;
 
     try {
       // Push the bookmark
@@ -362,11 +375,10 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
   unmount();
 }
 
-async function getCurrentBookmark(): Promise<string | null> {
-  const result = await $`jj log -r @ --no-graph -T 'bookmarks'`.nothrow().quiet();
+async function getCurrentBookmark(rev = "@"): Promise<string | null> {
+  const result = await $`jj log -r ${rev} --no-graph -T 'bookmarks'`.nothrow().quiet();
   const output = result.stdout.toString().trim();
   if (!output) return null;
-  // Take first bookmark if multiple, strip status suffixes (* for unpushed, @ for current, etc.)
   return output.split(/\s+/)[0].replace(/[*@?!]+$/, '');
 }
 
@@ -507,11 +519,12 @@ async function syncAll(dryRun: boolean): Promise<void> {
   const items: SyncItem[] = await Promise.all(
     bookmarks.map(async (bookmark) => {
       const pr = await findPRForBranch(bookmark.name);
+      const isMerged = pr?.merged_at !== null && pr?.merged_at !== undefined;
       return {
         name: bookmark.name,
         prNumber: pr?.number,
         prUrl: pr?.html_url,
-        status: pr ? "pending" : "skipped",
+        status: pr && !isMerged ? "pending" : "skipped",
       } as SyncItem;
     })
   );
@@ -552,6 +565,7 @@ async function syncAll(dryRun: boolean): Promise<void> {
                 bookmark: b,
                 prNumber: prInfo?.number,
                 prUrl: prInfo?.html_url,
+                isMerged: prInfo?.merged_at !== null && prInfo?.merged_at !== undefined,
               };
             })
           )
@@ -613,11 +627,22 @@ async function listStack(targetBookmark?: string): Promise<void> {
 
 // CLI
 const args = process.argv.slice(2);
-const command = args[0];
 const dryRun = args.includes("--dry-run") || args.includes("-n");
 
+let targetRev: string | undefined;
+const filteredArgs: string[] = [];
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === "-r" && i + 1 < args.length) {
+    targetRev = args[++i];
+  } else {
+    filteredArgs.push(args[i]);
+  }
+}
+
+const command = filteredArgs[0];
+
 if (command === "submit" || command === "s") {
-  const bookmark = args.find((a) => !a.startsWith("-") && a !== "submit" && a !== "s");
+  const bookmark = filteredArgs.find((a) => !a.startsWith("-") && a !== "submit" && a !== "s");
 
   if (!bookmark) {
     console.error("Usage: jj-pr-stack submit <bookmark> [--dry-run]");
@@ -626,7 +651,7 @@ if (command === "submit" || command === "s") {
 
   await submit(bookmark, dryRun);
 } else if (command === "list" || command === "ls") {
-  const bookmark = args.find((a) => !a.startsWith("-") && a !== "list" && a !== "ls");
+  const bookmark = filteredArgs.find((a) => !a.startsWith("-") && a !== "list" && a !== "ls");
   await listStack(bookmark);
 } else if (command === "sync") {
   await syncAll(dryRun);
@@ -635,20 +660,22 @@ if (command === "submit" || command === "s") {
 
 Usage:
   jj-pr-stack                       Submit PRs for current bookmark's stack
+  jj-pr-stack -r <rev>              Submit PRs for bookmark at revision
   jj-pr-stack --dry-run             Dry run for current bookmark
   jj-pr-stack list [bookmark]       List bookmarks or show stack
   jj-pr-stack submit <bookmark>     Submit PRs for specified bookmark's stack
   jj-pr-stack sync                  Update all existing PRs with stack info
 
 Options:
+  -r <rev>         Target revision (default: @)
   -n, --dry-run    Show what would happen without making changes
   -h, --help       Show this help message
 `);
 } else if (!command || command.startsWith("-")) {
-  // No command or just flags - submit current bookmark
-  const bookmark = await getCurrentBookmark();
+  const bookmark = await getCurrentBookmark(targetRev);
   if (!bookmark) {
-    console.error("No bookmark on current revision. Create one with: jj bc");
+    const revLabel = targetRev && targetRev !== "@" ? ` (${targetRev})` : "";
+    console.error(`No bookmark on current revision${revLabel}. Create one with: jj bc`);
     process.exit(1);
   }
   await submit(bookmark, dryRun);

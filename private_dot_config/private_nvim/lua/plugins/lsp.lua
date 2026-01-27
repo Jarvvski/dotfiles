@@ -6,11 +6,9 @@ return {
       "williamboman/mason.nvim",
       "williamboman/mason-lspconfig.nvim",
       "hrsh7th/cmp-nvim-lsp",
-      { "folke/neodev.nvim", opts = {} },
+      { "folke/lazydev.nvim", ft = "lua", opts = {} },
     },
     config = function()
-      -- Setup neodev for Lua LSP
-      require("neodev").setup()
 
       -- Setup Mason
       require("mason").setup()
@@ -25,6 +23,7 @@ return {
         "jsonls",
         "yamlls",
         "terraformls",
+        "kotlin_language_server",
       }
 
       require("mason-lspconfig").setup({
@@ -33,7 +32,7 @@ return {
       })
 
       -- LSP keymaps
-      local on_attach = function(client, bufnr)
+      local on_attach = function(_, bufnr)
         local opts = { buffer = bufnr }
         vim.keymap.set("n", "gd", vim.lsp.buf.definition, vim.tbl_extend("force", opts, { desc = "Go to definition" }))
         vim.keymap.set("n", "gD", vim.lsp.buf.declaration, vim.tbl_extend("force", opts, { desc = "Go to declaration" }))
@@ -52,9 +51,9 @@ return {
       -- Setup LSP servers using new vim.lsp.config API
       for _, server in ipairs(servers) do
         if server == "lua_ls" then
-          -- Custom setup for lua_ls
           vim.lsp.config(server, {
             cmd = { vim.fn.exepath("lua-language-server") },
+            capabilities = capabilities,
             root_markers = { ".luarc.json", ".luarc.jsonc", ".luacheckrc", ".stylua.toml", "stylua.toml", "selene.toml", "selene.yml", ".git" },
             settings = {
               Lua = {
@@ -69,8 +68,9 @@ return {
             },
           })
         else
-          -- Default setup for other servers
-          vim.lsp.config(server, {})
+          vim.lsp.config(server, {
+            capabilities = capabilities,
+          })
         end
       end
 

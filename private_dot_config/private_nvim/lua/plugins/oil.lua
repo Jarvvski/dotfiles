@@ -4,7 +4,7 @@ return {
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
       require("oil").setup({
-        default_file_explorer = false, -- nvim-tree remains default
+        default_file_explorer = true,
         columns = { "icon" },
         keymaps = {
           ["g?"] = "actions.show_help",

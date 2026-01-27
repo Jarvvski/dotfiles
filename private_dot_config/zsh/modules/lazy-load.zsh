@@ -20,6 +20,3 @@ else
   eval "$(ldcli completion zsh)"
   eval "$(mise activate zsh)"
 fi
-
-# Defer asdf shims (can be slow)
-# Note: Keep ASDF_DATA_DIR exports in asdf.zsh, only defer the shim loading

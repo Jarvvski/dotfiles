@@ -49,6 +49,7 @@ alias cat="bat --paging=never"  # bat without paging (override existing)
 # Quality of Life
 alias reload="exec zsh"   # reload shell
 alias dots="cd ~/.config" # jump to dotfiles
+alias mono="cd ~/code/ameba/mono" # jump to ameba monorepo
 alias chezmoi-edit="cd ~/.local/share/chezmoi" # jump to chezmoi source
 
 # System info

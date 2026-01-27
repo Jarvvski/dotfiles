@@ -17,12 +17,18 @@ autocmd("BufWritePre", {
   command = [[%s/\s\+$//e]],
 })
 
--- Auto-format on save (will be enabled per filetype)
+-- Auto-format on save (only when LSP supports it)
 autocmd("BufWritePre", {
   group = augroup("auto_format", { clear = true }),
   pattern = "*",
   callback = function()
-    vim.lsp.buf.format({ async = false })
+    local clients = vim.lsp.get_clients({ bufnr = 0 })
+    for _, client in ipairs(clients) do
+      if client:supports_method("textDocument/formatting") then
+        vim.lsp.buf.format({ async = false })
+        return
+      end
+    end
   end,
 })
 

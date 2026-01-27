@@ -1,6 +1,6 @@
 [user]
 name = "Adam Jarvis"
-email = "ajarvis@ameba.ai"
+email = "adam@ameba.ai"
 
 [signing]
 behavior = "drop"
@@ -25,22 +25,28 @@ auto-update-stale = true
 backend="watchman"
 
 [fsmonitor.watchman]
-register-snapshot-trigger = true
+register-snapshot-trigger = false
 
 [aliases]
 weld = ["rebase", "--skip-emptied", "-s", "roots(mutable() & mine() & ::(mutable() & visible_heads() & mine()))", "-d", "main@origin"]
 smelt = ["git", "push", "--revisions", "all() ~ conflicts()"]
 fetch = ["git", "fetch"]
-forge = ["util", "exec", "--", "sh", "-c", "jj fetch && jj weld && jj smelt && jj-spr sync"]
+forge = ["util", "exec", "--", "jj-forge"]
 push = ["git", "push"]
 pa = ["git", "push", "--all"]
 ls = ["log", "-r", "@ | ancestors(trunk()..(mutable() & visible_heads() & mine()), 3) | trunk()"]
 rm = ["abandon"]
+tidy = ["abandon", "mutable() & empty() & description(exact:'') ~ @ ~ bookmarks() ~ tags()"]
+insert = ["new", "-A", "@-", "-B", "@"]
 # bc = ["bookmark", "create", "-r", "@", "concat(\"ajarvis/\", change_id.short())"]
 bcn = ["util", "exec", "--", "jj-bcn"]
 spr = ["util", "exec", "--", "jj-spr"]
 parent = ["util", "exec", "--", "jj-nav", "parent"]
 child = ["util", "exec", "--", "jj-nav", "child"]
+ws = ["util", "exec", "--", "jj-ws"]
+wsx = ["util", "exec", "--", "jj-wsx"]
+t = ["util", "exec", "--", "jj-tree"]
+tree = ["util", "exec", "--", "jj-tree"]
 
 [template-aliases]
 bookmark_prefix = "ajarvis/"
@@ -72,7 +78,7 @@ private = "description(glob:'wip:*')"
 recent = 'author_date(after:"7 days ago")'
 
 [revsets]
-immutable-heads = 'builtin_immutable_heads() | (trunk().. & ~mine()) | author_date(before:"2025-10-18")'
+immutable-heads = 'builtin_immutable_heads() | (trunk().. & ~mine()) | author_date(before:"2025-10-18") | working_copies() ~ @'
 short-prefixes = "(trunk()..@):: | (trunk()..(mutable() & visible_heads() & mine()))"
 log = "mine() | bookmarks() | ::trunk() | trunk().."
 #short-prefixes = "mine() | @.. | bookmarks() | ::trunk() | trunk().."
