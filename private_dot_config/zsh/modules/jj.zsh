@@ -118,3 +118,6 @@ alias je="jj-edit"
 alias js="jj-show"
 alias jlog="jj-log"
 alias jop="jj-op"
+
+# because why not
+alias j="jj"

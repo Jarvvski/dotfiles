@@ -1,22 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read file_path; touch \"$file_path\" 2>/dev/null & }"
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "/Users/jarvis/.claude/statusline-command.sh"
-  },
-  "alwaysThinkingEnabled": true,
   "permissions": {
     "allow": [
       "Bash(./gradlew:*)",
@@ -43,5 +25,23 @@
     "deny": [],
     "ask": [],
     "defaultMode": "plan"
-  }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file_path; touch \"$file_path\" 2>/dev/null & }"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/Users/jarvis/.claude/statusline-command.sh"
+  },
+  "alwaysThinkingEnabled": true
 }

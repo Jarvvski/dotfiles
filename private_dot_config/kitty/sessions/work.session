@@ -1,0 +1,7 @@
+new_tab work
+cd ~/work
+launch zsh
+
+new_tab servers
+cd ~/work
+launch zsh

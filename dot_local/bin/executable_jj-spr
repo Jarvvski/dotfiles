@@ -93,7 +93,8 @@ async function createPR(
   head: string,
   base: string,
   title: string,
-  body: string
+  body: string,
+  draft: boolean = true
 ): Promise<PRInfo> {
   const { owner, repo } = await getRepoInfo();
   return ghApi<PRInfo>(`repos/${owner}/${repo}/pulls`, "POST", {
@@ -101,6 +102,7 @@ async function createPR(
     base,
     title,
     body,
+    draft,
   });
 }
 
@@ -181,6 +183,24 @@ async function getBookmarkStack(targetBookmark: string): Promise<string[]> {
   return result.length > 0 ? result : [targetBookmark];
 }
 
+async function getCommitInfo(bookmarkName: string): Promise<{ title: string; body: string }> {
+  // Get the commit message for the bookmark
+  const template = `description`;
+  const result = await $`jj log -r ${bookmarkName} --no-graph -T ${template}`.nothrow().quiet();
+  const output = result.stdout.toString().trim();
+
+  if (!output) {
+    return { title: bookmarkName, body: "" };
+  }
+
+  // Split into title (first line) and body (rest)
+  const lines = output.split("\n");
+  const title = lines[0] || bookmarkName;
+  const body = lines.slice(1).join("\n").trim();
+
+  return { title, body };
+}
+
 function generateStackSection(
   stack: StackEntry[],
   currentBookmark: string
@@ -210,7 +230,6 @@ function updateBodyWithStack(existingBody: string, stackSection: string): string
 }
 
 async function pushBookmark(bookmarkName: string): Promise<void> {
-  console.log(`  Pushing ${bookmarkName}...`);
   await $`jj git push -b ${bookmarkName}`.quiet();
 }
 
@@ -226,10 +245,11 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
 
   // Get the stack for this bookmark
   const stackNames = await getBookmarkStack(targetBookmark);
-  console.log(`Stack: ${stackNames.join(" → ")}`);
 
-  // Build stack entries
+  // Build stack entries and initial items for UI
   const stack: StackEntry[] = [];
+  const items: SubmitItem[] = [];
+
   for (const name of stackNames) {
     const bookmark = bookmarkMap.get(name);
     if (!bookmark) continue;
@@ -240,82 +260,114 @@ async function submit(targetBookmark: string, dryRun: boolean): Promise<void> {
       prNumber: pr?.number,
       prUrl: pr?.html_url,
     });
+    items.push({
+      name,
+      prNumber: pr?.number,
+      prUrl: pr?.html_url,
+      status: "pending",
+      isNew: !pr,
+    });
   }
 
   const defaultBranch = await getDefaultBranch();
 
+  // Render UI
+  const { rerender, unmount } = render(
+    <SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />
+  );
+
   // Process each bookmark in the stack
   for (let i = 0; i < stack.length; i++) {
     const entry = stack[i];
+    const item = items[i];
     const baseBranch = i === 0 ? defaultBranch : stack[i - 1].bookmark.name;
 
-    console.log(`\nProcessing ${entry.bookmark.name}...`);
+    try {
+      // Push the bookmark
+      item.status = "pushing";
+      rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
 
-    // Push the bookmark
-    if (!dryRun) {
-      await pushBookmark(entry.bookmark.name);
-    } else {
-      console.log(`  [dry-run] Would push ${entry.bookmark.name}`);
-    }
-
-    // Generate stack section for this PR
-    const stackSection = generateStackSection(stack, entry.bookmark.name);
-
-    if (entry.prNumber) {
-      // Update existing PR
-      console.log(`  Updating PR #${entry.prNumber}...`);
       if (!dryRun) {
-        const pr = await findPRForBranch(entry.bookmark.name);
-        if (pr) {
-          const newBody = updateBodyWithStack(pr.body || "", stackSection);
+        await pushBookmark(entry.bookmark.name);
+      }
+
+      // Generate stack section for this PR
+      const stackSection = generateStackSection(stack, entry.bookmark.name);
+
+      if (entry.prNumber) {
+        // Update existing PR
+        item.status = "updating_pr";
+        rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
+
+        if (!dryRun) {
+          const existingPR = await findPRForBranch(entry.bookmark.name);
+          const newBody = updateBodyWithStack(existingPR?.body || "", stackSection);
           await updatePR(entry.prNumber, { body: newBody, base: baseBranch });
         }
       } else {
-        console.log(`  [dry-run] Would update PR #${entry.prNumber}`);
-        console.log(`  [dry-run] Base: ${baseBranch}`);
-      }
-    } else {
-      // Create new PR
-      console.log(`  Creating PR...`);
-      const title = entry.bookmark.name;
-      const body = stackSection;
+        // Create new PR
+        item.status = "creating_pr";
+        rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
 
-      if (!dryRun) {
-        const pr = await createPR(entry.bookmark.name, baseBranch, title, body);
-        entry.prNumber = pr.number;
-        entry.prUrl = pr.html_url;
-        console.log(`  Created PR #${pr.number}: ${pr.html_url}`);
-      } else {
-        console.log(`  [dry-run] Would create PR: ${title}`);
-        console.log(`  [dry-run] Base: ${baseBranch}`);
+        // Get commit info for PR title and body
+        const commitInfo = await getCommitInfo(entry.bookmark.name);
+        const title = commitInfo.title;
+        const body = commitInfo.body
+          ? `${commitInfo.body}\n\n${stackSection}`
+          : stackSection;
+
+        if (!dryRun) {
+          const pr = await createPR(entry.bookmark.name, baseBranch, title, body, true);
+          entry.prNumber = pr.number;
+          entry.prUrl = pr.html_url;
+          item.prNumber = pr.number;
+          item.prUrl = pr.html_url;
+        }
       }
+
+      item.status = "done";
+      rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
+    } catch (e) {
+      item.status = "failed";
+      item.error = e instanceof Error ? e.message : "Unknown error";
+      rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
     }
   }
 
   // Second pass: update all PRs with complete stack info (now that all PRs exist)
   if (!dryRun) {
-    console.log("\nUpdating stack links...");
-    for (const entry of stack) {
-      if (entry.prNumber) {
-        const stackSection = generateStackSection(stack, entry.bookmark.name);
-        const pr = await findPRForBranch(entry.bookmark.name);
-        if (pr) {
-          const newBody = updateBodyWithStack(pr.body || "", stackSection);
-          await updatePR(entry.prNumber, { body: newBody });
+    for (const item of items) {
+      if (item.prNumber && item.status === "done") {
+        item.status = "updating_stack";
+        rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
+
+        try {
+          const entry = stack.find((s) => s.bookmark.name === item.name);
+          if (entry) {
+            const stackSection = generateStackSection(stack, entry.bookmark.name);
+            const existingPR = await findPRForBranch(entry.bookmark.name);
+            const newBody = updateBodyWithStack(existingPR?.body || "", stackSection);
+            await updatePR(entry.prNumber!, { body: newBody });
+          }
+          item.status = "done";
+        } catch (e) {
+          item.status = "failed";
+          item.error = e instanceof Error ? e.message : "Unknown error";
         }
+        rerender(<SubmitUI items={items} stackNames={stackNames} dryRun={dryRun} />);
       }
     }
   }
 
-  console.log("\nDone!");
+  unmount();
 }
 
 async function getCurrentBookmark(): Promise<string | null> {
   const result = await $`jj log -r @ --no-graph -T 'bookmarks'`.nothrow().quiet();
   const output = result.stdout.toString().trim();
   if (!output) return null;
-  // Take first bookmark if multiple
-  return output.split(/\s+/)[0];
+  // Take first bookmark if multiple, strip status suffixes (* for unpushed, @ for current, etc.)
+  return output.split(/\s+/)[0].replace(/[*@?!]+$/, '');
 }
 
 // Ink UI for sync progress
@@ -351,12 +403,94 @@ function SyncUI({ items, dryRun }: { items: SyncItem[]; dryRun: boolean }) {
           >
             {item.name}
             {item.prNumber && item.prUrl ? (
-              <> <Link url={item.prUrl}>#{item.prNumber}</Link></>
+              <> <Text color="blue"><Link url={item.prUrl}>#{item.prNumber}</Link></Text></>
             ) : item.prNumber ? ` #${item.prNumber}` : ""}
             {item.error ? ` - ${item.error}` : ""}
           </Text>
         </Box>
       ))}
+    </Box>
+  );
+}
+
+// Ink UI for submit progress
+type SubmitStatus = "pending" | "pushing" | "creating_pr" | "updating_pr" | "updating_stack" | "done" | "failed";
+
+interface SubmitItem {
+  name: string;
+  prNumber?: number;
+  prUrl?: string;
+  status: SubmitStatus;
+  isNew: boolean;
+  error?: string;
+}
+
+function SubmitUI({ items, stackNames, dryRun }: {
+  items: SubmitItem[];
+  stackNames: string[];
+  dryRun: boolean;
+}) {
+  const stackDisplay = stackNames.join(" → ");
+
+  return (
+    <Box flexDirection="column">
+      <Text color="gray">{dryRun ? "(dry-run) " : ""}Stack: {stackDisplay}</Text>
+      <Text> </Text>
+      {items.map((item) => {
+        let statusIcon: React.ReactNode;
+        let statusText = "";
+
+        switch (item.status) {
+          case "pending":
+            statusIcon = <Text color="gray">· </Text>;
+            break;
+          case "pushing":
+            statusIcon = <><Spinner label="" /><Text> </Text></>;
+            statusText = " (pushing...)";
+            break;
+          case "creating_pr":
+            statusIcon = <><Spinner label="" /><Text> </Text></>;
+            statusText = " (creating PR...)";
+            break;
+          case "updating_pr":
+            statusIcon = <><Spinner label="" /><Text> </Text></>;
+            statusText = " (updating PR...)";
+            break;
+          case "updating_stack":
+            statusIcon = <><Spinner label="" /><Text> </Text></>;
+            statusText = " (updating stack links...)";
+            break;
+          case "done":
+            statusIcon = <Text color="green">✓ </Text>;
+            break;
+          case "failed":
+            statusIcon = <Text color="red">✗ </Text>;
+            break;
+        }
+
+        const color =
+          item.status === "done" ? "green" :
+          item.status === "failed" ? "red" :
+          item.status === "pending" ? "gray" :
+          undefined;
+
+        return (
+          <Box key={item.name}>
+            <Text>  </Text>
+            {statusIcon}
+            <Text color={color}>
+              {item.name}
+              {item.prNumber && item.prUrl ? (
+                <> <Text color="blue"><Link url={item.prUrl}>#{item.prNumber}</Link></Text></>
+              ) : item.prNumber ? ` #${item.prNumber}` : ""}
+              {item.isNew && item.status === "done" && !item.prUrl ? " (new)" : ""}
+              {statusText}
+              {item.error ? ` - ${item.error}` : ""}
+            </Text>
+          </Box>
+        );
+      })}
+      <Text> </Text>
     </Box>
   );
 }
