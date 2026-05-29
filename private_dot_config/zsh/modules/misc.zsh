@@ -1,4 +1,5 @@
-export TERM=xterm-256color
+# NOTE: do not hardcode TERM here - modern terminals (WezTerm, Ghostty, Kitty)
+# advertise their own TERM (xterm-kitty, etc.) enabling truecolor + undercurl.
 export CASE_SENSITIVE="false"
 
 # common exports

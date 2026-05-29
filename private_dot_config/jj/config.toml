@@ -53,10 +53,9 @@ bookmark_prefix = "ajarvis/"
 'format_short_id(id)' = 'id.shortest(6)'
 'format_short_signature(signature)' = '''
 label("author",
+  if(signature.email() == "adam@ameba.ai", "me",
   if(signature.email() == "ajarvis@ameba.ai", "me",
-  if(signature.email() == "craigsmassie@gmail.com", "craig",
-  if(signature.email() == "craig@ameba.ai", "craig",
-  signature.email().local()))))
+  signature.email().local())))
 '''
 'format_timestamp(timestamp)' = 'timestamp.local().format("%Y-%m-%d %H:%M")'
 'format_short_commit_header(commit)' = '''

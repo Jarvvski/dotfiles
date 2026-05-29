@@ -3,7 +3,6 @@ alias zshrc="$EDITOR $ZDOTDIR/.zshrc"
 alias czshrc="code $ZDOTDIR/.zshrc"
 alias cpwd="pwd | pbcopy"
 alias randomPass="echo $RANDOM | md5sum | head -c 20; echo;"
-alias cat="bat"
 
 alias gnetstat='lsof -Pi | grep -i listen'
 alias gwo='gw openidea'
@@ -14,16 +13,28 @@ alias c="clear"
 alias ll="ls -l"
 alias lla="ls -la"
 
-# push any dotfiles changes up
+# Push dotfile changes up.
+# CRITICAL: `chezmoi re-add` first - this pulls your live config edits into the
+# chezmoi source. Without it the source silently drifts from reality (the old
+# dotp just committed whatever was already in source). Pass a message: dotp "fix nvim lsp"
 function dotp() {
-    jj -R ~/.local/share/chezmoi describe -m "Sync"
-    jj -R ~/.local/share/chezmoi b set main -r @
-    jj -R ~/.local/share/chezmoi git push --branch main
+    local repo=~/.local/share/chezmoi
+    chezmoi re-add || return 1
+    local msg="${*:-chezmoi sync}"
+    jj -R "$repo" describe -m "$msg"
+    jj -R "$repo" bookmark set main -r @
+    jj -R "$repo" git push --branch main --allow-new
+    jj -R "$repo" new main
 }
+# Pull dotfile changes from the remote and apply them to the live filesystem.
 function dotf() {
-    jj -R ~/.local/share/chezmoi git fetch
-    jj -R ~/.local/share/chezmoi new main
+    local repo=~/.local/share/chezmoi
+    jj -R "$repo" git fetch
+    jj -R "$repo" new main
+    chezmoi apply
 }
+# Show what has drifted between live config and the chezmoi source (run before dotp).
+alias dotd='chezmoi status'
 alias dotu='~/.cron.sh'
 alias dotst='jj -R ~/.local/share/chezmoi ls'
 

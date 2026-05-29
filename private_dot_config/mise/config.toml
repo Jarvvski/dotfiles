@@ -1,0 +1,6 @@
+[settings]
+trusted_config_paths = ["./"]
+
+[tools]
+"cargo:pay-respects" = "latest"
+java = "corretto-21.0.10.7.1"

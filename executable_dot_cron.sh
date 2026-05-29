@@ -4,13 +4,13 @@ chezmoi add ~/.config/zsh/
 chezmoi add ~/.config/git/
 chezmoi add ~/.config/bat/
 chezmoi add ~/.config/colima/
-chezmoi add ~/.config/asdf/
 chezmoi add ~/.config/fd/
 chezmoi add ~/.config/hammerspoon/
 chezmoi add ~/.config/jj/
 chezmoi add ~/.config/karabiner/
 chezmoi add ~/.config/kitty/
 chezmoi add ~/.config/linearmouse/
+chezmoi add ~/.config/mise/
 chezmoi add ~/.config/nvim/
 chezmoi add ~/.config/ohmyposh/
 chezmoi add ~/.config/wezterm/
