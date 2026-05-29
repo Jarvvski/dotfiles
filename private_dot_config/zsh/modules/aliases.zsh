@@ -20,11 +20,18 @@ alias lla="ls -la"
 function dotp() {
     local repo=~/.local/share/chezmoi
     chezmoi re-add || return 1
+    # Nothing drifted? Skip - avoids pushing empty "chezmoi sync" commits.
+    if [[ "$(jj -R "$repo" log -r @ --no-graph -T empty 2>/dev/null)" == "true" ]]; then
+        echo "dotp: no dotfile changes to sync"
+        return 0
+    fi
     local msg="${*:-chezmoi sync}"
     jj -R "$repo" describe -m "$msg"
     jj -R "$repo" bookmark set main -r @
-    jj -R "$repo" git push --branch main --allow-new
-    jj -R "$repo" new main
+    # main is remote-tracked (+ auto-track-bookmarks in jj config), so no
+    # --allow-new is needed; and jj auto-creates a fresh empty @ once the
+    # pushed commit becomes immutable, so no trailing `jj new` is needed.
+    jj -R "$repo" git push --bookmark main
 }
 # Pull dotfile changes from the remote and apply them to the live filesystem.
 function dotf() {
