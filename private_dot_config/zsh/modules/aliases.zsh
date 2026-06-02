@@ -9,6 +9,7 @@ alias gwo='gw openidea'
 
 alias omp="oh-my-posh"
 alias c="clear"
+alias cc="claude"
 
 alias ll="ls -l"
 alias lla="ls -la"
