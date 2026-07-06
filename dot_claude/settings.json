@@ -22,6 +22,7 @@
       "WebFetch(domain:habr.com)",
       "Bash(jj:*)",
       "Bash(rg:*)",
+      "Bash(grep:*)",
       "Bash(jq:*)",
       "Bash(gh api *)",
       "Bash(gh pr *)"
@@ -39,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | { read cmd; case \"$cmd\" in git\\ *|git) echo 'BLOCK: Use jj, not git.' >&2; exit 2 ;; grep\\ *|grep) echo 'BLOCK: Use the built-in Grep tool, not grep via Bash.' >&2; exit 2 ;; esac; if echo \"$cmd\" | grep -qE '\\|\\s*git(\\s|$)'; then echo 'BLOCK: Use jj, not git.' >&2; exit 2; fi; }"
+            "command": "jq -r '.tool_input.command' | { read cmd; case \"$cmd\" in git\\ *|git) echo 'BLOCK: Use jj, not git.' >&2; exit 2 ;; esac; if echo \"$cmd\" | grep -qE '\\|\\s*git(\\s|$)'; then echo 'BLOCK: Use jj, not git.' >&2; exit 2; fi; }"
           }
         ]
       }
@@ -69,7 +70,9 @@
     "gopls-lsp@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
+  "tui": "fullscreen",
+  "skipWorkflowUsageWarning": true,
   "remoteControlAtStartup": false,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true

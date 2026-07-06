@@ -10,6 +10,8 @@ alias gwo='gw openidea'
 alias omp="oh-my-posh"
 alias c="clear"
 alias cc="claude"
+alias cct='bunx ccusage@latest daily --since $(date +%Y%m%d) --until $(date +%Y%m%d)'
+alias ccm='bunx ccusage@latest daily --since $(date +%Y%m01) --until $(date +%Y%m%d)'
 
 alias ll="ls -l"
 alias lla="ls -la"

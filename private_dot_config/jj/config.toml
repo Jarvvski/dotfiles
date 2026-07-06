@@ -3,7 +3,7 @@ name = "Adam Jarvis"
 email = "adam@ameba.ai"
 
 [signing]
-behavior = "drop"
+behavior = "own"
 backend = "gpg"
 key = "E94E14177DD0EFD265FDABCEC6337B9F8FD4854B"
 
@@ -37,6 +37,7 @@ pa = ["git", "push", "--all"]
 ls = ["log", "-r", "@ | ancestors(trunk()..(mutable() & visible_heads() & mine()), 3) | trunk()"]
 rm = ["abandon"]
 tidy = ["abandon", "mutable() & empty() & description(exact:'') ~ @ ~ bookmarks() ~ tags()"]
+tidyws = ["rebase", "--ignore-immutable", "-s", "working_copies() & empty() & description(exact:'') ~ bookmarks() ~ tags()", "-d", "trunk()"]
 insert = ["new", "-A", "@-", "-B", "@"]
 # bc = ["bookmark", "create", "-r", "@", "concat(\"ajarvis/\", change_id.short())"]
 bcn = ["util", "exec", "--", "jj-bcn"]

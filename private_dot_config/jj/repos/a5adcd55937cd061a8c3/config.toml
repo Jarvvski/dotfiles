@@ -1,0 +1,4 @@
+#:schema https://docs.jj-vcs.dev/latest/config-schema.json
+
+[snapshot]
+max-new-file-size = "3MiB"
