@@ -2,3 +2,6 @@
 
 [revset-aliases]
 "trunk()" = "main@origin"
+
+[snapshot]
+max-new-file-size = "2MiB"
