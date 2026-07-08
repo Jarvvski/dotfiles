@@ -41,5 +41,8 @@ zcomet load Aloxaf/fzf-tab
 # Configure fzf-tab (must be after plugin load)
 zcomet snippet "$ZDOTDIR/modules/fzf-tab.zsh"
 
+# television (tv) file-picker widget (Ctrl-G); after compinit so ZLE is ready
+zcomet snippet "$ZDOTDIR/modules/television.zsh"
+
 # Load lazy-load after all plugins are ready
 zcomet snippet "$ZDOTDIR/modules/lazy-load.zsh"
