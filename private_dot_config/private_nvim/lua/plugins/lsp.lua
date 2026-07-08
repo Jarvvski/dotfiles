@@ -5,7 +5,7 @@ return {
     dependencies = {
       "williamboman/mason.nvim",
       "williamboman/mason-lspconfig.nvim",
-      "hrsh7th/cmp-nvim-lsp",
+      "saghen/blink.cmp",
       { "folke/lazydev.nvim", ft = "lua", opts = {} },
     },
     config = function()
@@ -45,8 +45,8 @@ return {
         vim.keymap.set("n", "<leader>lf", function() vim.lsp.buf.format({ async = true }) end, vim.tbl_extend("force", opts, { desc = "Format" }))
       end
 
-      -- Capabilities
-      local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      -- Capabilities (blink.cmp augments the LSP defaults for completion)
+      local capabilities = require("blink.cmp").get_lsp_capabilities()
 
       -- Setup LSP servers using new vim.lsp.config API
       for _, server in ipairs(servers) do

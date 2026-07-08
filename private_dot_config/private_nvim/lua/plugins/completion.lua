@@ -1,74 +1,68 @@
 return {
   {
-    "hrsh7th/nvim-cmp",
+    "saghen/blink.cmp",
+    -- lsp.lua pulls in blink's LSP capabilities at startup, so blink loads
+    -- eagerly; its Rust matcher keeps that cheap. version pins the prebuilt
+    -- release binary (no local cargo build required).
     event = "InsertEnter",
-    dependencies = {
-      "hrsh7th/cmp-buffer",
-      "hrsh7th/cmp-path",
-      "hrsh7th/cmp-nvim-lsp",
-      "L3MON4D3/LuaSnip",
-      "saadparwaiz1/cmp_luasnip",
-      "rafamadriz/friendly-snippets",
-      "onsails/lspkind.nvim",
+    version = "1.*",
+    dependencies = { "rafamadriz/friendly-snippets" },
+    opts = {
+      -- Preserve the exact nvim-cmp keymaps this config used before.
+      keymap = {
+        preset = "none",
+        ["<C-k>"] = { "select_prev", "fallback" },
+        ["<C-j>"] = { "select_next", "fallback" },
+        ["<C-b>"] = { "scroll_documentation_up", "fallback" },
+        ["<C-f>"] = { "scroll_documentation_down", "fallback" },
+        ["<C-Space>"] = { "show", "show_documentation", "hide_documentation" },
+        ["<C-e>"] = { "hide", "fallback" },
+        ["<CR>"] = { "accept", "fallback" },
+      },
+      appearance = {
+        nerd_font_variant = "mono",
+      },
+      completion = {
+        menu = {
+          border = "rounded",
+          winhighlight = "Normal:Normal,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+          draw = { treesitter = { "lsp" } },
+        },
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 200,
+          window = { border = "rounded" },
+        },
+        ghost_text = { enabled = false },
+      },
+      sources = {
+        default = { "lsp", "path", "snippets", "buffer", "lazydev" },
+        providers = {
+          lazydev = {
+            name = "LazyDev",
+            module = "lazydev.integrations.blink",
+            score_offset = 100,
+          },
+        },
+      },
+      fuzzy = { implementation = "prefer_rust_with_warning" },
+      signature = { enabled = false },
     },
-    config = function()
-      local cmp = require("cmp")
-      local luasnip = require("luasnip")
-      local lspkind = require("lspkind")
+    opts_extend = { "sources.default" },
+    config = function(_, opts)
+      require("blink.cmp").setup(opts)
 
-      -- Load friendly snippets
-      require("luasnip.loaders.from_vscode").lazy_load()
-
-      cmp.setup({
-        snippet = {
-          expand = function(args)
-            luasnip.lsp_expand(args.body)
-          end,
-        },
-        window = {
-          completion = {
-            border = "rounded",
-            winhighlight = "Normal:Normal,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
-            scrollbar = false,
-          },
-          documentation = {
-            border = "rounded",
-            winhighlight = "Normal:Normal,FloatBorder:FloatBorder",
-          },
-        },
-        mapping = cmp.mapping.preset.insert({
-          ["<C-k>"] = cmp.mapping.select_prev_item(),
-          ["<C-j>"] = cmp.mapping.select_next_item(),
-          ["<C-b>"] = cmp.mapping.scroll_docs(-4),
-          ["<C-f>"] = cmp.mapping.scroll_docs(4),
-          ["<C-Space>"] = cmp.mapping.complete(),
-          ["<C-e>"] = cmp.mapping.abort(),
-          ["<CR>"] = cmp.mapping.confirm({ select = true }),
-        }),
-        sources = cmp.config.sources({
-          { name = "lazydev", group_index = 0 },
-          { name = "nvim_lsp" },
-          { name = "luasnip" },
-          { name = "buffer" },
-          { name = "path" },
-        }),
-        formatting = {
-          format = lspkind.cmp_format({
-            mode = "symbol_text",
-            maxwidth = 50,
-          }),
-        },
-      })
-
-      -- Set transparent background for completion menu
-      vim.api.nvim_set_hl(0, "Pmenu", { bg = "NONE", fg = "#c8d3f5" })
-      vim.api.nvim_set_hl(0, "PmenuSel", { bg = "#3e68d7", fg = "#ffffff", bold = true })
-      vim.api.nvim_set_hl(0, "PmenuSbar", { bg = "#1e2030" })
-      vim.api.nvim_set_hl(0, "PmenuThumb", { bg = "#3e68d7" })
-      vim.api.nvim_set_hl(0, "CmpItemAbbrMatch", { fg = "#82aaff", bold = true })
-      vim.api.nvim_set_hl(0, "CmpItemAbbrMatchFuzzy", { fg = "#82aaff", bold = true })
-      vim.api.nvim_set_hl(0, "CmpItemKind", { fg = "#c099ff" })
-      vim.api.nvim_set_hl(0, "CmpItemMenu", { fg = "#828bb8" })
+      -- Port the transparent / moonlight completion styling from nvim-cmp.
+      vim.api.nvim_set_hl(0, "BlinkCmpMenu", { bg = "NONE", fg = "#c8d3f5" })
+      vim.api.nvim_set_hl(0, "BlinkCmpMenuBorder", { bg = "NONE" })
+      vim.api.nvim_set_hl(0, "BlinkCmpMenuSelection", { bg = "#3e68d7", fg = "#ffffff", bold = true })
+      vim.api.nvim_set_hl(0, "BlinkCmpScrollBarThumb", { bg = "#3e68d7" })
+      vim.api.nvim_set_hl(0, "BlinkCmpScrollBarGutter", { bg = "#1e2030" })
+      vim.api.nvim_set_hl(0, "BlinkCmpLabelMatch", { fg = "#82aaff", bold = true })
+      vim.api.nvim_set_hl(0, "BlinkCmpKind", { fg = "#c099ff" })
+      vim.api.nvim_set_hl(0, "BlinkCmpLabelDescription", { fg = "#828bb8" })
+      vim.api.nvim_set_hl(0, "BlinkCmpDoc", { bg = "NONE" })
+      vim.api.nvim_set_hl(0, "BlinkCmpDocBorder", { bg = "NONE" })
     end,
   },
 }

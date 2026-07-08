@@ -75,6 +75,7 @@ return {
       local wk = require("which-key")
       wk.setup()
       wk.add({
+        { "<leader>a", group = "AI / Claude Code" },
         { "<leader>d", group = "Diagnostics" },
         { "<leader>f", group = "Find" },
         { "<leader>g", group = "Git" },
@@ -87,54 +88,6 @@ return {
     end,
   },
 
-  -- Better notifications
-  {
-    "rcarriga/nvim-notify",
-    config = function()
-      require("notify").setup({
-        background_colour = "#000000",
-      })
-      vim.notify = require("notify")
-    end,
-  },
-
-  -- Startup dashboard with ASCII art
-  {
-    "goolord/alpha-nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function()
-      local alpha = require("alpha")
-      local dashboard = require("alpha.themes.dashboard")
-
-      -- Custom NEOVIM ASCII art
-      dashboard.section.header.val = {
-        [[                                                    ]],
-        [[                                                    ]],
-        [[ ███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗]],
-        [[ ████╗  ██║██╔════╝██╔═══██╗██║   ██║██║████╗ ████║]],
-        [[ ██╔██╗ ██║█████╗  ██║   ██║██║   ██║██║██╔████╔██║]],
-        [[ ██║╚██╗██║██╔══╝  ██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║]],
-        [[ ██║ ╚████║███████╗╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║]],
-        [[ ╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝]],
-        [[                                                    ]],
-        [[                                                    ]],
-      }
-
-      dashboard.section.buttons.val = {
-        dashboard.button("f", "  Find file", ":Telescope find_files <CR>"),
-        dashboard.button("e", "  New file", ":ene <BAR> startinsert <CR>"),
-        dashboard.button("r", "  Recently used files", ":Telescope oldfiles <CR>"),
-        dashboard.button("g", "  Find text", ":Telescope live_grep <CR>"),
-        dashboard.button("c", "  Configuration", ":e ~/.config/nvim/init.lua <CR>"),
-        dashboard.button("q", "  Quit Neovim", ":qa<CR>"),
-      }
-
-      dashboard.section.footer.val = ""
-
-      dashboard.section.header.opts.hl = "Include"
-      dashboard.section.buttons.opts.hl = "Keyword"
-
-      alpha.setup(dashboard.opts)
-    end,
-  },
+  -- NOTE: notifications (nvim-notify) and the startup dashboard (alpha-nvim)
+  -- are now provided by snacks.nvim - see plugins/snacks.lua.
 }
