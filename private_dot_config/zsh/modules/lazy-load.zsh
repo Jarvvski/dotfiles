@@ -11,6 +11,12 @@ _lazy_init() {
   eval "$(zoxide init zsh)"
   eval "$(ldcli completion zsh)"     # LaunchDarkly CLI completion
   eval "$(pay-respects zsh --alias f)"  # `f` corrects the previous command
+  # carapace: multi-shell completions for 500+ commands, bridged from other
+  # engines. Sourced after compinit; integrates with fzf-tab. No-op if absent.
+  if (( $+commands[carapace] )); then
+    export CARAPACE_BRIDGES='zsh,fish,bash,inshellcomp'
+    source <(carapace _carapace)
+  fi
 }
 
 if (( $+functions[zsh-defer] )); then

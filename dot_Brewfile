@@ -34,6 +34,8 @@ brew "bc"
 brew "bottom"
 # New way of working with Protocol Buffers
 brew "buf"
+# Multi-shell completion engine (500+ commands); layers under fzf-tab
+brew "carapace"
 # Prevent cloud misconfigurations during build-time for IaC tools
 brew "checkov"
 # Manage your dotfiles across multiple diverse machines, securely
@@ -68,12 +70,8 @@ brew "doggo"
 brew "duf"
 # More intuitive version of du in rust
 brew "dust"
-# Open-source, cross-platform JavaScript runtime environment
-brew "node"
-# CLI to manage E2B sandboxes and templates
-brew "e2b"
-# AST-based pattern checker for JavaScript
-brew "eslint"
+# Language runtimes (node, bun, uv, poetry, typescript, eslint, e2b) are managed
+# by mise, not Homebrew - see ~/.config/mise/config.toml. Rust is managed by rustup.
 # Modern, maintained replacement for ls
 brew "eza"
 # Simple, fast and user-friendly alternative to find
@@ -154,8 +152,6 @@ brew "pgcli"
 brew "pinentry-mac"
 # Execute binaries from Python packages in isolated environments
 brew "pipx"
-# Python package management tool
-brew "poetry"
 # PDF rendering library (based on the xpdf-3.0 code base)
 brew "poppler"
 # Object-relational database system
@@ -168,8 +164,6 @@ brew "procs"
 brew "rclone"
 # Search tool like grep and The Silver Searcher
 brew "ripgrep"
-# Safe, concurrent, practical language
-brew "rust"
 # Autoformat shell script source code
 brew "shfmt"
 # Command driven spotify player
@@ -198,14 +192,10 @@ brew "tmux"
 brew "tokei"
 # Display directories as trees (with optional color/HTML output)
 brew "tree"
-# Language for application scale JavaScript development
-brew "typescript"
 # Ultra fast grep with query UI, fuzzy search, archive search, and more
 brew "ugrep"
 # Command-line unarchiving tools supporting multiple formats
 brew "unar"
-# Extremely fast Python package installer and resolver, written in Rust
-brew "uv"
 # Synchronize calendars and contacts
 brew "vdirsyncer"
 # HTTP load testing tool and library

@@ -2,5 +2,23 @@
 trusted_config_paths = ["./"]
 
 [tools]
-"cargo:pay-respects" = "latest"
+# Language runtimes - migrated off Homebrew 2026-07-08.
+# Not here on purpose:
+#   - Rust: managed by rustup (~/.cargo), which handles nightly/components.
+#   - Python global: stays on Homebrew python@3.14 (17 brew tools depend on it);
+#     mise owns per-project pythons via each project's own mise.toml.
+node = "26"
+bun = "1.3"
+uv = "latest"
+poetry = "latest"
 java = "corretto-21.0.10.7.1"
+"cargo:pay-respects" = "latest"
+
+# Pure-JS global CLIs, formerly `npm -g` on Homebrew node - fine via mise's npm
+# backend. (claude-code and codex are NOT here: they ship their real binary as a
+# platform-native optional dependency that mise's npm backend skips, producing a
+# broken stub. They use their own native, self-updating installers instead.)
+"npm:typescript-language-server" = "latest"
+"npm:typescript" = "latest"
+"npm:eslint" = "latest"
+"npm:@e2b/cli" = "latest"

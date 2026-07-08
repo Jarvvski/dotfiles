@@ -32,7 +32,7 @@ The file to edit for each area:
 | Terminals | `wezterm/wezterm.lua` (normal) + `wezterm/wezterm-visor.lua` (dropdown); also `kitty/`, `ghostty/`, `iterm2/`, `zed/` |
 | Window mgmt | `hammerspoon/init.lua` (dropdown-terminal toggle) |
 | VCS | `jj/config.toml`, `git/config` |
-| Containers | `colima/{default,fast,rosetta}`, `docker/config.json` |
+| Containers | `colima/default` (only profile on disk), `docker/config.json` |
 | Tool versions | `mise/config.toml` (mise replaced asdf/nvm/pyenv) |
 | Keyboard / mouse | `karabiner/karabiner.json`, `linearmouse/linearmouse.json` |
 | CLI utils | `bat/config`, `fd/ignore`, `gh/config.yml`, `khal/`, `vdirsyncer/` |
