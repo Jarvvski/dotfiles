@@ -176,6 +176,8 @@ brew "superfile"
 brew "teleport"
 # User interface to the TELNET protocol
 brew "telnet"
+# Cross-platform, fast, extensible general-purpose fuzzy finder
+brew "television"
 # Tool to generate documentation from Terraform modules
 brew "terraform-docs"
 # Thin wrapper for Terraform e.g. for locking state
@@ -282,6 +284,8 @@ cask "notion"
 cask "notion-calendar"
 # Email client integrated with Notion workspace
 cask "notion-mail"
+# Fast, light Docker/OCI containers & Linux machines (Colima alternative)
+cask "orbstack"
 # Utility to uninstall apps and remove leftover files from old/uninstalled apps
 cask "pearcleaner"
 # Home media player
