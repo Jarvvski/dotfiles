@@ -4,4 +4,4 @@
 "trunk()" = "main@origin"
 
 [snapshot]
-max-new-file-size = 1048576
+max-new-file-size = 1572864

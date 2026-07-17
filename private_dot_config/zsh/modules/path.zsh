@@ -14,5 +14,11 @@ export PATH="$HOME/.cache/.bun/bin:$PATH"
 export PATH="/opt/homebrew/bin:$PATH"
 export PATH="/opt/homebrew/sbin:$PATH"
 
+# mise shims: resolve tool versions on invocation with no `mise activate`, so
+# non-interactive shells (zsh -c, editors, jjfx's claude pane, cron) get the
+# managed tools too - the deferred `mise activate` in lazy-load.zsh never fires
+# without a prompt. Placed last so it takes precedence over Homebrew.
+export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims:$PATH"
+
 # JetBrains Toolbox
 export PATH="$PATH:$HOME/Library/Application Support/JetBrains/Toolbox/scripts"

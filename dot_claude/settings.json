@@ -33,14 +33,24 @@
     "ask": [],
     "defaultMode": "auto"
   },
+  "model": "claude-fable-5[1m]",
   "hooks": {
-    "PreToolUse": [
+    "Notification": [
       {
-        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | { read cmd; case \"$cmd\" in git\\ *|git) echo 'BLOCK: Use jj, not git.' >&2; exit 2 ;; esac; if echo \"$cmd\" | grep -qE '\\|\\s*git(\\s|$)'; then echo 'BLOCK: Use jj, not git.' >&2; exit 2; fi; }"
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Waiting # notchbar-agents-claude-hook"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx\" && printf '%s\\n' \"$(cat)\" >> \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx/events.jsonl\""
           }
         ]
       }
@@ -54,6 +64,123 @@
             "command": "jq -r '.tool_input.file_path' | { read fp; case \"$fp\" in *.kt) ktlint \"$fp\" 2>&1 | head -10 ;; *.py) ruff check \"$fp\" 2>&1 | head -10 ;; *.ts|*.tsx) prettier --check \"$fp\" 2>&1 | head -5 ;; esac; } || true"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Auto # notchbar-agents-claude-hook"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx\" && printf '%s\\n' \"$(cat)\" >> \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx/events.jsonl\""
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' ToolFail # notchbar-agents-claude-hook"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | { read cmd; case \"$cmd\" in git\\ *|git) echo 'BLOCK: Use jj, not git.' >&2; exit 2 ;; esac; if echo \"$cmd\" | grep -qE '\\|\\s*git(\\s|$)'; then echo 'BLOCK: Use jj, not git.' >&2; exit 2; fi; }"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Working # notchbar-agents-claude-hook"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Ended # notchbar-agents-claude-hook"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx\" && printf '%s\\n' \"$(cat)\" >> \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx/events.jsonl\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Idle # notchbar-agents-claude-hook"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx\" && printf '%s\\n' \"$(cat)\" >> \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx/events.jsonl\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Idle # notchbar-agents-claude-hook"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx\" && printf '%s\\n' \"$(cat)\" >> \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx/events.jsonl\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/jarvis/Library/Application Support/Bartender/NotchBar/AgentStatus/hooks/claude-event-hook.sh' Working # notchbar-agents-claude-hook"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx\" && printf '%s\\n' \"$(cat)\" >> \"${XDG_STATE_HOME:-$HOME/.local/state}/jjfx/events.jsonl\""
+          }
+        ]
       }
     ]
   },
@@ -62,12 +189,13 @@
     "command": "/Users/jarvis/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "code-review@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true,
+    "kotlin-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "kotlin-lsp@claude-plugins-official": true,
-    "gopls-lsp@claude-plugins-official": true
+    "posthog@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
