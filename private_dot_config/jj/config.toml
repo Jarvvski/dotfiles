@@ -8,6 +8,8 @@ backend = "gpg"
 key = "E94E14177DD0EFD265FDABCEC6337B9F8FD4854B"
 
 [git]
+# Keep Jujutsu's permitted Git subprocesses out of Pi's direct-Git PATH guard.
+executable-path = "/opt/homebrew/bin/git"
 private-commits = "private"
 sign-on-push = true
 
