@@ -8,8 +8,10 @@ import {
 	type ExtensionAPI,
 	type ExtensionContext,
 	getAgentDir,
+	SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { Key } from "@earendil-works/pi-tui";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
@@ -21,6 +23,54 @@ import {
 } from "./utils.ts";
 
 const PLAN_CONFIG_PATH = join(getAgentDir(), "plan-mode.json");
+
+const MODEL_SETTINGS_STATE_KEY =
+	"__piPlanModeSessionOnlyModelSettings" as const;
+
+interface SessionOnlyModelSettingsState {
+	scope: AsyncLocalStorage<boolean>;
+}
+
+type PlanModeGlobal = typeof globalThis & {
+	[MODEL_SETTINGS_STATE_KEY]?: SessionOnlyModelSettingsState;
+};
+
+function getSessionOnlyModelSettings(): AsyncLocalStorage<boolean> {
+	const planModeGlobal = globalThis as PlanModeGlobal;
+	const existingState = planModeGlobal[MODEL_SETTINGS_STATE_KEY];
+	if (existingState) return existingState.scope;
+
+	const scope = new AsyncLocalStorage<boolean>();
+	const settingsManagerPrototype = SettingsManager.prototype;
+	const persistDefaultModelAndProvider =
+		settingsManagerPrototype.setDefaultModelAndProvider;
+	const persistDefaultThinkingLevel =
+		settingsManagerPrototype.setDefaultThinkingLevel;
+
+	settingsManagerPrototype.setDefaultModelAndProvider = function (
+		provider: string,
+		modelId: string,
+	): void {
+		if (scope.getStore()) return;
+		persistDefaultModelAndProvider.call(this, provider, modelId);
+	};
+	settingsManagerPrototype.setDefaultThinkingLevel = function (
+		level: ModelThinkingLevel,
+	): void {
+		if (scope.getStore()) return;
+		persistDefaultThinkingLevel.call(this, level);
+	};
+	planModeGlobal[MODEL_SETTINGS_STATE_KEY] = { scope };
+	return scope;
+}
+
+const sessionOnlyModelSettings = getSessionOnlyModelSettings();
+
+function withSessionOnlyModelSettings<T>(
+	operation: () => Promise<T>,
+): Promise<T> {
+	return sessionOnlyModelSettings.run(true, operation);
+}
 
 interface ModelSettings {
 	provider: string;
@@ -255,15 +305,17 @@ export default function planMode(pi: ExtensionAPI): void {
 			);
 			return false;
 		}
-		if (!(await pi.setModel(model))) {
-			ctx.ui.notify(
-				`Planner model ${settings.provider}/${settings.model} has no configured authentication.`,
-				"error",
-			);
-			return false;
-		}
-		pi.setThinkingLevel(settings.thinkingLevel);
-		return true;
+		return withSessionOnlyModelSettings(async () => {
+			if (!(await pi.setModel(model))) {
+				ctx.ui.notify(
+					`Planner model ${settings.provider}/${settings.model} has no configured authentication.`,
+					"error",
+				);
+				return false;
+			}
+			pi.setThinkingLevel(settings.thinkingLevel);
+			return true;
+		});
 	}
 
 	async function activatePlanner(ctx: ExtensionContext): Promise<boolean> {
@@ -321,19 +373,29 @@ export default function planMode(pi: ExtensionAPI): void {
 			);
 			return false;
 		}
+		const previousSettings = modelBeforePlanMode;
 		const model = ctx.modelRegistry.find(
-			modelBeforePlanMode.provider,
-			modelBeforePlanMode.model,
+			previousSettings.provider,
+			previousSettings.model,
 		);
-		if (!model || !(await pi.setModel(model))) {
+		if (!model) {
 			ctx.ui.notify(
-				`Pre-plan model ${modelBeforePlanMode.provider}/${modelBeforePlanMode.model} is unavailable or unauthenticated.`,
+				`Pre-plan model ${previousSettings.provider}/${previousSettings.model} is unavailable or unauthenticated.`,
 				"error",
 			);
 			return false;
 		}
-		pi.setThinkingLevel(modelBeforePlanMode.thinkingLevel);
-		return true;
+		return withSessionOnlyModelSettings(async () => {
+			if (!(await pi.setModel(model))) {
+				ctx.ui.notify(
+					`Pre-plan model ${previousSettings.provider}/${previousSettings.model} is unavailable or unauthenticated.`,
+					"error",
+				);
+				return false;
+			}
+			pi.setThinkingLevel(previousSettings.thinkingLevel);
+			return true;
+		});
 	}
 
 	async function toggle(ctx: ExtensionContext): Promise<void> {
