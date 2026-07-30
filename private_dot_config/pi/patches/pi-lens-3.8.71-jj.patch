@@ -1,0 +1,136 @@
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -3478,15 +3478,8 @@
+   }
+   return ids;
+ }
+-async function fetchUntrackedIgnoredIds(cwd) {
+-  try {
+-    const result = await safeSpawnAsync("git", ["ls-files", "--others", "--ignored", "--exclude-standard"], { cwd, timeout: 1e4, resourceLabel: "git-tracked-ignore" });
+-    if (result.error || result.status !== 0)
+-      return void 0;
+-    return parseUntrackedIgnoredOutput(result.stdout, cwd);
+-  } catch {
+-    return void 0;
+-  }
++async function fetchUntrackedIgnoredIds(_cwd) {
++  return void 0;
+ }
+ function collectUntrackedIgnoredIds(cwd) {
+   const key2 = normalizeMapKey(cwd);
+@@ -3514,10 +3507,10 @@
+ }
+ async function fetchTrackedFiles(cwd) {
+   try {
+-    const result = await safeSpawnAsync("git", ["ls-files"], {
++    const result = await safeSpawnAsync("jj", ["file", "list"], {
+       cwd,
+       timeout: 1e4,
+-      resourceLabel: "git-tracked-ignore"
++      resourceLabel: "jj-tracked-files"
+     });
+     if (result.error || result.status !== 0)
+       return void 0;
+@@ -3802,7 +3795,7 @@
+   const fallback = path11.resolve(startDir);
+   let current = fallback;
+   while (true) {
+-    if (fs6.existsSync(path11.join(current, ".git")))
++    if (fs6.existsSync(path11.join(current, ".jj")) || fs6.existsSync(path11.join(current, ".git")))
+       return current;
+     const parent = path11.dirname(current);
+     if (parent === current)
+@@ -27976,10 +27969,10 @@
+ import { execSync } from "node:child_process";
+ import * as fs94 from "node:fs";
+ import * as path134 from "node:path";
+-function isInsideGitRepo(startDir) {
++function isInsideJjRepo(startDir) {
+   let dir = path134.resolve(startDir);
+   while (true) {
+-    if (fs94.existsSync(path134.join(dir, ".git"))) {
++    if (fs94.existsSync(path134.join(dir, ".jj"))) {
+       return true;
+     }
+     const parent = path134.dirname(dir);
+@@ -27990,11 +27983,11 @@
+   return false;
+ }
+ function getCurrentCommit() {
+-  if (!isInsideGitRepo(process.cwd())) {
++  if (!isInsideJjRepo(process.cwd())) {
+     return "unknown";
+   }
+   try {
+-    return execSync("git rev-parse --short HEAD", {
++    return execSync("jj log -r @ --no-graph -T 'commit_id.short()'", {
+       encoding: "utf-8",
+       timeout: 5e3
+     }).trim();
+--- a/dist/clients/git-tracked-ignore.js
++++ b/dist/clients/git-tracked-ignore.js
+@@ -60,16 +60,8 @@
+     }
+     return ids;
+ }
+-async function fetchUntrackedIgnoredIds(cwd) {
+-    try {
+-        const result = await safeSpawnAsync("git", ["ls-files", "--others", "--ignored", "--exclude-standard"], { cwd, timeout: 10_000, resourceLabel: "git-tracked-ignore" });
+-        if (result.error || result.status !== 0)
+-            return undefined;
+-        return parseUntrackedIgnoredOutput(result.stdout, cwd);
+-    }
+-    catch {
+-        return undefined;
+-    }
++async function fetchUntrackedIgnoredIds(_cwd) {
++    return undefined;
+ }
+ // #694: the review-graph build calls this on EVERY incremental/cascade
+ // rebuild (a hot, per-edit path), not just `/lens-map`'s one-shot generation —
+@@ -138,10 +130,10 @@
+ }
+ async function fetchTrackedFiles(cwd) {
+     try {
+-        const result = await safeSpawnAsync("git", ["ls-files"], {
++        const result = await safeSpawnAsync("jj", ["file", "list"], {
+             cwd,
+             timeout: 10_000,
+-            resourceLabel: "git-tracked-ignore",
++            resourceLabel: "jj-tracked-files",
+         });
+         if (result.error || result.status !== 0)
+             return undefined;
+--- a/dist/clients/metrics-history.js
++++ b/dist/clients/metrics-history.js
+@@ -17,10 +17,10 @@
+ /**
+  * Check whether cwd is inside a Git worktree.
+  */
+-function isInsideGitRepo(startDir) {
++function isInsideJjRepo(startDir) {
+     let dir = path.resolve(startDir);
+     while (true) {
+-        if (fs.existsSync(path.join(dir, ".git"))) {
++        if (fs.existsSync(path.join(dir, ".jj"))) {
+             return true;
+         }
+         const parent = path.dirname(dir);
+@@ -31,14 +31,14 @@
+     return false;
+ }
+ /**
+- * Get current git commit hash (short)
++ * Get the current Jujutsu commit id (short).
+  */
+ function getCurrentCommit() {
+-    if (!isInsideGitRepo(process.cwd())) {
++    if (!isInsideJjRepo(process.cwd())) {
+         return "unknown";
+     }
+     try {
+-        return execSync("git rev-parse --short HEAD", {
++        return execSync("jj log -r @ --no-graph -T 'commit_id.short()'", {
+             encoding: "utf-8",
+             timeout: 5000,
+         }).trim();

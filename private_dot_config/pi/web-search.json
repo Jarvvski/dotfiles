@@ -1,0 +1,11 @@
+{
+  "provider": "auto",
+  "allowBrowserCookies": false,
+  "webSearch": {
+    "enabled": true
+  },
+  "githubClone": {
+    "enabled": false
+  },
+  "workflow": "summary-review"
+}

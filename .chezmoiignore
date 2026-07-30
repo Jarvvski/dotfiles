@@ -60,3 +60,16 @@
 **/*.bak
 **/*.backup
 **/*.bak-*
+
+# Pi credentials and machine-local/generated state
+.config/pi/auth.json
+.config/pi/mcp-oauth/
+.config/pi/mcp-cache.json
+.config/pi/models-store.json
+.config/pi/sessions/
+.config/pi/prompt-history/
+.config/pi/run-history.jsonl
+.config/pi/memory/
+.config/pi/trust.json
+.config/pi/npm/
+.config/pi/node_modules/

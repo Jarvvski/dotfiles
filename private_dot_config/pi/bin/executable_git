@@ -1,0 +1,47 @@
+#!/bin/sh
+
+exec_real_git() {
+	guard_dir=$(CDPATH= cd -P -- "${0%/*}" 2>/dev/null && pwd)
+	clean_path=
+	old_ifs=$IFS
+	IFS=:
+	for entry in ${PATH:-}; do
+		[ -n "$entry" ] || continue
+		resolved_entry=$(CDPATH= cd -P -- "$entry" 2>/dev/null && pwd)
+		[ "$resolved_entry" = "$guard_dir" ] && continue
+		if [ -n "$clean_path" ]; then
+			clean_path=$clean_path:$entry
+		else
+			clean_path=$entry
+		fi
+	done
+	IFS=$old_ifs
+	PATH=$clean_path
+	export PATH
+	real_git=$(command -v git 2>/dev/null) || {
+		printf '%s\n' 'Unable to find the real Git executable.' >&2
+		exit 127
+	}
+	exec "$real_git" "$@"
+}
+
+parent_pid=$PPID
+pid=$parent_pid
+while [ -n "$pid" ] && [ "$pid" -gt 1 ] 2>/dev/null; do
+	process=$(ps -p "$pid" -o comm= 2>/dev/null) || break
+	process=${process##*/}
+
+	# Jujutsu can invoke Git internally from any descendant process.
+	[ "$process" = "jj" ] && exec_real_git
+
+	# GitHub CLI sometimes invokes Git for repository metadata. Restrict this
+	# exception to Git directly spawned by the GitHub CLI, rather than allowing
+	# arbitrary descendants of a GitHub CLI process.
+	[ "$pid" = "$parent_pid" ] && [ "$process" = "gh" ] && exec_real_git
+
+	pid=$(ps -p "$pid" -o ppid= 2>/dev/null) || break
+	pid=${pid##* }
+done
+
+printf '%s\n' 'Blocked: invoke Git through Jujutsu (jj), not directly.' >&2
+exit 126

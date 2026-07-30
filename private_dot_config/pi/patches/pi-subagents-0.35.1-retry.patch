@@ -1,0 +1,14 @@
+--- a/src/runs/shared/model-fallback.ts
++++ b/src/runs/shared/model-fallback.ts
+@@ -295,9 +295,8 @@ const RETRYABLE_MODEL_FAILURE_PATTERNS = [
+ 	/upstream/i,
+ 	/timed? out/i,
+ 	/timeout/i,
+-	/\b502\b/,
+-	/\b503\b/,
+-	/\b504\b/,
++	// Any three-digit HTTP 5xx response is eligible for the existing fallback-model sequence.
++	/\b5\d{2}\b/,
+ 	/cold.?start/i,
+ 	/empty response/i,
+ 	/no output/i,

@@ -15,6 +15,21 @@ chezmoi add ~/.config/nvim/
 chezmoi add ~/.config/ohmyposh/
 chezmoi add ~/.config/wezterm/
 chezmoi add ~/.config/cron/
+
+# Pi portable configuration only. Credentials and machine-local state are excluded.
+chezmoi add ~/.config/pi/AGENTS.md
+chezmoi add ~/.config/pi/bin/
+chezmoi add ~/.config/pi/extensions/
+chezmoi add ~/.config/pi/keybindings.json
+chezmoi add ~/.config/pi/mcp.json
+chezmoi add ~/.config/pi/patches/
+chezmoi add ~/.config/pi/plan-mode.json
+chezmoi add ~/.config/pi/prompts/
+chezmoi add ~/.config/pi/safety-guard.json
+chezmoi add ~/.config/pi/settings.json
+chezmoi add ~/.config/pi/themes/
+chezmoi add ~/.config/pi/web-search.json
+
 chezmoi add ~/.claude/settings.json
 
 chezmoi add ~/.gnupg/

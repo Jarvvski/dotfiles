@@ -1,0 +1,110 @@
+--- a/src/watchdog/change-signature.ts
++++ b/src/watchdog/change-signature.ts
+@@ -12,8 +12,8 @@
+ 	changedPaths: string[];
+ }
+ 
+-function git(cwd: string, args: string[]): string | undefined {
+-	const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 });
++function jj(cwd: string, args: string[]): string | undefined {
++	const result = spawnSync("jj", args, { cwd, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 });
+ 	if (result.status !== 0) return undefined;
+ 	return result.stdout;
+ }
+@@ -76,23 +76,16 @@
+ }
+ 
+ export function computeWatchdogRepoChangeSignature(cwd: string): WatchdogRepoChangeSignature | undefined {
+-	const root = git(cwd, ["rev-parse", "--show-toplevel"])?.trim();
++	const root = jj(cwd, ["root"])?.trim();
+ 	if (!root) return undefined;
+-	const statusOutput = git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
+-	if (statusOutput === undefined) return undefined;
+-	const entries = parsePorcelainZ(statusOutput)
+-		.map((entry) => ({
+-			status: entry.status,
+-			paths: entry.paths.map(normalizeRelPath).filter((relPath) => !ignoredRelPath(relPath)),
+-		}))
+-		.filter((entry) => entry.paths.length > 0)
+-		.sort((a, b) => `${a.status} ${a.paths.join("\0")}`.localeCompare(`${b.status} ${b.paths.join("\0")}`));
+-	const changedPaths = [...new Set(entries.flatMap((entry) => entry.paths))].sort();
+-	const payload = entries.map((entry) => ({
+-		status: entry.status,
+-		paths: entry.paths,
+-		content: entry.paths.map((relPath) => hashPath(root, relPath)),
+-	}));
++	const changedOutput = jj(root, ["diff", "--name-only", "--color", "never"]);
++	if (changedOutput === undefined) return undefined;
++	const changedPaths = [...new Set(changedOutput
++		.split(/\r?\n/)
++		.map((entry) => normalizeRelPath(entry.trim()))
++		.filter((entry) => entry.length > 0 && !ignoredRelPath(entry)))]
++		.sort();
++	const payload = changedPaths.map((relPath) => hashPath(root, relPath));
+ 	const key = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+ 	return { root, key, changedPaths };
+ }
+--- a/src/runs/shared/acceptance.ts
++++ b/src/runs/shared/acceptance.ts
+@@ -1,5 +1,4 @@
+ import { spawn } from "node:child_process";
+-import { spawnSync } from "node:child_process";
+ import * as fs from "node:fs";
+ import * as path from "node:path";
+ import type {
+@@ -869,15 +868,8 @@
+ 	}
+ }
+ 
+-function checkNoStagedFiles(cwd: string): AcceptanceRuntimeCheck {
+-	const result = spawnSync("git", ["status", "--short"], { cwd, encoding: "utf-8" });
+-	if (result.status !== 0) {
+-		return { id: "no-staged-files", status: "not-applicable", message: "git status unavailable; no staged-files check skipped" };
+-	}
+-	const staged = result.stdout.split(/\r?\n/).filter((line) => line.length >= 2 && line[0] !== " " && line[0] !== "?");
+-	return staged.length === 0
+-		? { id: "no-staged-files", status: "passed", message: "No staged files detected." }
+-		: { id: "no-staged-files", status: "failed", message: `Staged files present: ${staged.join(", ")}` };
++function checkNoStagedFiles(_cwd: string): AcceptanceRuntimeCheck {
++	return { id: "no-staged-files", status: "passed", message: "Jujutsu has no staging area." };
+ }
+ 
+ function runStructuralChecks(acceptance: ResolvedAcceptanceConfig, report: AcceptanceReport, cwd: string): AcceptanceRuntimeCheck[] {
+--- a/src/runs/shared/worktree.ts
++++ b/src/runs/shared/worktree.ts
+@@ -1,4 +1,3 @@
+-import { spawnSync } from "node:child_process";
+ import * as fs from "node:fs";
+ import * as os from "node:os";
+ import * as path from "node:path";
+@@ -81,12 +80,11 @@
+ 
+ const DEFAULT_WORKTREE_SETUP_HOOK_TIMEOUT_MS = 30000;
+ 
+-function runGit(cwd: string, args: string[]): GitResult {
+-	const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf-8" });
++function runGit(_cwd: string, _args: string[]): GitResult {
+ 	return {
+-		stdout: result.stdout ?? "",
+-		stderr: result.stderr ?? "",
+-		status: result.status,
++		stdout: "",
++		stderr: "Worktree isolation is disabled: this Pi setup uses Jujutsu and does not create additional workspaces.",
++		status: 126,
+ 	};
+ }
+ 
+--- a/src/extension/index.ts
++++ b/src/extension/index.ts
+@@ -125,7 +125,10 @@
+ }
+ 
+ function isStaleExtensionContextError(error: unknown): boolean {
+-	return error instanceof Error && error.message.includes("Extension context no longer active");
++	return error instanceof Error && (
++		error.message.includes("Extension context no longer active")
++		|| error.message.includes("extension ctx is stale")
++	);
+ }
+ 
+ function rebuildSlashResultContainer(

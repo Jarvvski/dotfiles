@@ -1,0 +1,140 @@
+{
+  "lastChangelogVersion": "0.83.0",
+  "theme": "tokyo-night",
+  "quietStartup": true,
+  "terminal": {
+    "showImages": true,
+    "imageWidthCells": 60
+  },
+  "images": {
+    "autoResize": true,
+    "blockImages": false
+  },
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-5.6-sol",
+  "defaultThinkingLevel": "high",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
+  },
+  "skills": [
+    "/Users/jarvis/.agent-shared/skills"
+  ],
+  "enableSkillCommands": true,
+  "subagents": {
+    "agentOverrides": {
+      "worker": {
+        "tools": [
+          "read",
+          "bash",
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls",
+          "intercom"
+        ],
+        "acceptanceRole": "writer"
+      },
+      "scout": {
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "intercom"
+        ],
+        "acceptanceRole": "read-only"
+      },
+      "researcher": {
+        "tools": [
+          "read",
+          "web_search",
+          "fetch_content",
+          "get_search_content",
+          "intercom"
+        ],
+        "acceptanceRole": "read-only"
+      },
+      "planner": {
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "intercom"
+        ],
+        "acceptanceRole": "read-only"
+      },
+      "reviewer": {
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "intercom"
+        ],
+        "acceptanceRole": "read-only"
+      },
+      "context-builder": {
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "web_search",
+          "fetch_content",
+          "get_search_content",
+          "intercom"
+        ],
+        "acceptanceRole": "read-only"
+      },
+      "oracle": {
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "intercom"
+        ],
+        "acceptanceRole": "read-only"
+      },
+      "delegate": {
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "contact_supervisor"
+        ],
+        "acceptanceRole": "read-only"
+      }
+    },
+    "watchdog": {
+      "enabled": true,
+      "main": {
+        "enabled": true,
+        "model": "anthropic/claude-opus-4-8",
+        "thinking": "high"
+      },
+      "children": {
+        "enabled": true,
+        "model": "anthropic/claude-opus-4-8",
+        "thinking": "high"
+      },
+      "lsp": {
+        "enabled": true,
+        "timeoutMs": 3000,
+        "maxFiles": 20,
+        "maxDiagnostics": 50
+      }
+    }
+  },
+  "packages": [
+    "npm:pi-subagents@0.35.1",
+    "npm:pi-web-access@0.13.0",
+    "npm:pi-lens@3.8.71",
+    "npm:pi-mcp-adapter@2.11.0"
+  ]
+}

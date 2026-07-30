@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "autoAuth": true,
+    "directTools": false,
+    "idleTimeout": 10,
+    "outputGuard": true
+  },
+  "mcpServers": {
+    "linear": {
+      "url": "https://mcp.linear.app/mcp",
+      "auth": "oauth",
+      "lifecycle": "keep-alive"
+    },
+    "slack": {
+      "url": "https://mcp.slack.com/mcp",
+      "auth": "oauth",
+      "oauth": {
+        "clientId": "1601185624273.8899143856786",
+        "redirectUri": "http://localhost:3118/callback"
+      },
+      "lifecycle": "keep-alive"
+    },
+    "notion": {
+      "url": "https://mcp.notion.com/mcp",
+      "auth": "oauth",
+      "lifecycle": "keep-alive"
+    },
+    "grafana": {
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "GRAFANA_URL=$(jq -r '.mcpServers.grafana.env.GRAFANA_URL // empty' \"$HOME/.claude.json\"); GRAFANA_SERVICE_ACCOUNT_TOKEN=$(jq -r '.mcpServers.grafana.env.GRAFANA_SERVICE_ACCOUNT_TOKEN // empty' \"$HOME/.claude.json\"); export GRAFANA_URL GRAFANA_SERVICE_ACCOUNT_TOKEN; exec uvx mcp-grafana"
+      ],
+      "lifecycle": "keep-alive"
+    }
+  }
+}

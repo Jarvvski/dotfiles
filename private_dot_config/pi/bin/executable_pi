@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+
+PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
+PATCH_DIR="$PI_DIR/patches"
+NPM_DIR="$PI_DIR/npm/node_modules"
+
+apply_patch() {
+  package_dir="$1"
+  patch_file="$2"
+  patch_id="$3"
+  marker_file="$4"
+  marker="$package_dir/$marker_file"
+
+  # Pi installs configured npm packages before loading them. If the cache was
+  # removed, let Pi restore it; the Git blocker still fails closed, and the
+  # next launch will apply the pinned Jujutsu compatibility patch.
+  if [ ! -d "$package_dir" ]; then
+    return
+  fi
+  if [ -f "$marker" ] && [ "$(cat "$marker")" = "$patch_id" ]; then
+    return
+  fi
+
+  if patch -d "$package_dir" -p1 --dry-run --forward --silent < "$patch_file" >/dev/null 2>&1; then
+    patch -d "$package_dir" -p1 --forward --silent < "$patch_file"
+  elif ! patch -d "$package_dir" -p1 --dry-run --reverse --silent < "$patch_file" >/dev/null 2>&1; then
+    echo "Pi package patch no longer applies: $patch_file" >&2
+    echo "Refusing to start with unaudited Git-dependent package code." >&2
+    exit 1
+  fi
+  printf '%s\n' "$patch_id" > "$marker"
+}
+
+REAL_PI="$(realpath "$(/opt/homebrew/bin/mise which pi)")"
+PI_PACKAGE_DIR="$(CDPATH= cd -- "$(dirname "$REAL_PI")/.." && pwd)"
+
+apply_patch "$NPM_DIR/pi-subagents" "$PATCH_DIR/pi-subagents-0.35.1-jj.patch" "pi-subagents@0.35.1-jj-v3" ".pi-jj-patched"
+apply_patch "$NPM_DIR/pi-lens" "$PATCH_DIR/pi-lens-3.8.71-jj.patch" "pi-lens@3.8.71-jj-v1" ".pi-jj-patched"
+apply_patch "$NPM_DIR/pi-subagents" "$PATCH_DIR/pi-subagents-0.35.1-retry.patch" "pi-subagents@0.35.1-retry-v1" ".pi-retry-patched"
+apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.81.1-retry.patch" "pi-coding-agent@0.81.1-retry-v1" ".pi-retry-patched"
+
+exec "$REAL_PI" "$@"
