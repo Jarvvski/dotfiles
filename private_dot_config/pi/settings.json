@@ -137,5 +137,5 @@
     "npm:pi-lens@3.8.71",
     "npm:pi-mcp-adapter@2.11.0"
   ],
-  "hideThinkingBlock": false
+  "hideThinkingBlock": true
 }

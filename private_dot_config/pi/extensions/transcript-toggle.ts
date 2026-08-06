@@ -36,6 +36,19 @@ function isThinkingHidden(ctx: ExtensionContext): boolean {
 }
 
 type AnyToolDefinition = ToolDefinition<any, any, any>;
+type ToolDisplayPolicy = "compact" | "full";
+
+// Full file mutations remain visible. Read-only and shell-oriented tools use
+// their built-in compact renderers until Ctrl+O expands the tool transcript.
+const TOOL_DISPLAY_POLICY: Record<string, ToolDisplayPolicy> = {
+	edit: "full",
+	write: "full",
+	bash: "compact",
+	read: "compact",
+	grep: "compact",
+	find: "compact",
+	ls: "compact",
+};
 
 function compactCall(
 	definition: AnyToolDefinition,
@@ -43,38 +56,49 @@ function compactCall(
 	theme: any,
 	context: any,
 ) {
-	if (definition.name !== "write" && definition.name !== "edit") {
-		return (
-			definition.renderCall?.(args, theme, context) ??
-			new Text(theme.fg("toolTitle", definition.label), 0, 0)
+	if (definition.name === "bash") {
+		return new Text(
+			theme.fg("toolTitle", theme.bold("Ran 1 shell command")),
+			0,
+			0,
 		);
 	}
 
-	const path = args.path ?? args.file_path ?? "...";
-	return new Text(
-		`${theme.fg("toolTitle", theme.bold(definition.name))} ${theme.fg("accent", path)}`,
-		0,
-		0,
+	return (
+		definition.renderCall?.(args, theme, context) ??
+		new Text(theme.fg("toolTitle", definition.label), 0, 0)
 	);
 }
 
 function compactTool(definition: AnyToolDefinition): AnyToolDefinition {
+	const policy = TOOL_DISPLAY_POLICY[definition.name] ?? "compact";
+
 	return {
 		...definition,
+		defaultExpanded: policy === "full",
 		renderCall(args, theme, context) {
-			if (context.expanded) {
-				return (
-					definition.renderCall?.(args, theme, context) ??
-					new Text(theme.fg("toolTitle", definition.label), 0, 0)
-				);
-			}
-			return compactCall(definition, args, theme, context);
+			const expanded = context.expanded;
+			const renderContext = context;
+
+			if (!expanded) return compactCall(definition, args, theme, renderContext);
+
+			return (
+				definition.renderCall?.(args, theme, renderContext) ??
+				new Text(theme.fg("toolTitle", definition.label), 0, 0)
+			);
 		},
 		renderResult(result, options, theme, context) {
-			if (!options.expanded && !context.isError) return new Container();
+			const expanded = options.expanded;
+			const renderOptions = options;
+			const renderContext = context;
+
 			return (
-				definition.renderResult?.(result, options, theme, context) ??
-				new Container()
+				definition.renderResult?.(
+					result,
+					renderOptions,
+					theme,
+					renderContext,
+				) ?? new Container()
 			);
 		},
 	};
@@ -104,7 +128,6 @@ export default function transcriptToggle(pi: ExtensionAPI): void {
 		if (!ctx.hasUI || ctx.mode !== "tui") return;
 
 		registerCompactBuiltIns(pi, ctx);
-		ctx.ui.setToolsExpanded(false);
 
 		const previousEditorFactory = ctx.ui.getEditorComponent();
 		ctx.ui.setEditorComponent((tui, theme, keybindings) => {

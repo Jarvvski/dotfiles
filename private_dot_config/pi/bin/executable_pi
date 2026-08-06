@@ -39,5 +39,6 @@ apply_patch "$NPM_DIR/pi-subagents" "$PATCH_DIR/pi-subagents-0.35.1-jj.patch" "p
 apply_patch "$NPM_DIR/pi-lens" "$PATCH_DIR/pi-lens-3.8.71-jj.patch" "pi-lens@3.8.71-jj-v1" ".pi-jj-patched"
 apply_patch "$NPM_DIR/pi-subagents" "$PATCH_DIR/pi-subagents-0.35.1-retry.patch" "pi-subagents@0.35.1-retry-v1" ".pi-retry-patched"
 apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.81.1-retry.patch" "pi-coding-agent@0.81.1-retry-v1" ".pi-retry-patched"
+apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.83.0-transcript-toggle.patch" "pi-coding-agent@0.83.0-transcript-toggle-v1" ".pi-transcript-toggle-patched"
 
 exec "$REAL_PI" "$@"
