@@ -1,0 +1,831 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# jj-ws — jj workspace manager
+# Workspaces stored at ../<repo-name>-workspaces/<name>/
+# Override with JJ_WS_DIR env var
+#
+# Uses a cache file at <repo>/.jj/ws-cache to avoid calling
+# `jj workspace list` on every invocation.
+
+# ── Repo discovery (no jj calls) ─────────────────────────────────────
+
+_find_jj_dir() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.jj" ]]; then
+      echo "$dir"
+      return
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+_repo_root() {
+  local ws_root
+  ws_root=$(_find_jj_dir) || return 1
+  local repo_link="$ws_root/.jj/repo"
+  if [[ -f "$repo_link" ]]; then
+    local target
+    target=$(cat "$repo_link")
+    if [[ "$target" != /* ]]; then
+      target="$ws_root/.jj/$target"
+    fi
+    echo "$(cd "$(dirname "$(dirname "$target")")" && pwd)"
+    return
+  fi
+  echo "$ws_root"
+}
+
+_base_dir() {
+  local root="$1"
+  if [[ -n "${JJ_WS_DIR:-}" ]]; then
+    if [[ "$JJ_WS_DIR" == /* ]]; then
+      echo "$JJ_WS_DIR"
+    else
+      echo "$root/$JJ_WS_DIR"
+    fi
+  else
+    echo "$(dirname "$root")/$(basename "$root")-workspaces"
+  fi
+}
+
+# ── Cache ─────────────────────────────────────────────────────────────
+# Format: one line per workspace: <name>\t<path>
+# Stored at <main-repo>/.jj/ws-cache
+
+_cache_file() {
+  echo "$1/.jj/ws-cache"
+}
+
+_cache_read() {
+  local cf="$1"
+  [[ -f "$cf" ]] && cat "$cf" || true
+}
+
+_cache_write() {
+  local cf="$1"
+  shift
+  printf '%s\n' "$@" > "$cf"
+}
+
+# Build cache from jj workspace list (the slow path)
+_cache_rebuild() {
+  local root="$1"
+  local base="$2"
+  local cf; cf=$(_cache_file "$root")
+  local entries=()
+  local line name wspath
+  while IFS= read -r line; do
+    name=$(echo "$line" | cut -d: -f1 | tr -d ' ')
+    [[ -z "$name" ]] && continue
+    if [[ "$name" == "default" ]]; then
+      wspath="$root"
+    else
+      wspath="$base/$name"
+    fi
+    entries+=("$name	$wspath")
+  done < <(jj workspace list 2>/dev/null)
+  # Always include default
+  if ! printf '%s\n' "${entries[@]}" | grep -q "^default	"; then
+    entries=("default	$root" "${entries[@]}")
+  fi
+  _cache_write "$cf" "${entries[@]}"
+  printf '%s\n' "${entries[@]}"
+}
+
+# Read cache, rebuild if missing
+_cache_get() {
+  local root="$1"
+  local base="$2"
+  local cf; cf=$(_cache_file "$root")
+  if [[ -f "$cf" ]]; then
+    cat "$cf"
+  else
+    _cache_rebuild "$root" "$base"
+  fi
+}
+
+_cache_add_entry() {
+  local root="$1" name="$2" wspath="$3"
+  local cf; cf=$(_cache_file "$root")
+  # Append if not already present
+  if [[ -f "$cf" ]] && grep -q "^${name}	" "$cf"; then
+    return
+  fi
+  echo "$name	$wspath" >> "$cf"
+}
+
+_cache_rm_entry() {
+  local root="$1" name="$2"
+  local cf; cf=$(_cache_file "$root")
+  [[ -f "$cf" ]] || return 0
+  local tmp="${cf}.tmp"
+  grep -v "^${name}	" "$cf" > "$tmp" 2>/dev/null || true
+  mv "$tmp" "$cf"
+}
+
+# ── Pool state ────────────────────────────────────────────────────────
+# Per-worker JSON state files in <repo>/.jj/pool/
+# Pool config in <repo>/.jj/pool.json
+
+_pool_dir() {
+  local root; root=$(_repo_root) || return 1
+  echo "$root/.jj/pool"
+}
+
+_pool_config() {
+  local root; root=$(_repo_root) || return 1
+  echo "$root/.jj/pool.json"
+}
+
+_worker_state() {
+  echo "$(_pool_dir)/${1}.json"
+}
+
+_worker_set_multi() {
+  local sf; sf=$(_worker_state "$1")
+  local tmp="${sf}.tmp"
+  jq "$2" "$sf" > "$tmp" && mv "$tmp" "$sf"
+}
+
+_find_idle_worker() {
+  local pool_dir; pool_dir=$(_pool_dir) || return 1
+  for f in "$pool_dir"/worker-*.json; do
+    [[ -f "$f" ]] || continue
+    local status
+    status=$(jq -r '.status' "$f")
+    if [[ "$status" == "idle" ]]; then
+      basename "$f" .json
+      return 0
+    fi
+  done
+  return 1
+}
+
+_gh_repo() {
+  local config; config=$(_pool_config) 2>/dev/null
+  if [[ -f "$config" ]]; then
+    local cached; cached=$(jq -r '.gh_repo // empty' "$config")
+    [[ -n "$cached" ]] && echo "$cached" && return
+  fi
+  jj git remote list 2>/dev/null | awk '/^origin/{print $2}' | sed -E 's#.*[:/]([^/]+/[^/]+)(\.git)?$#\1#'
+}
+
+_check_worker_liveness() {
+  local worker="$1"
+  local sf; sf=$(_worker_state "$worker")
+  [[ -f "$sf" ]] || return
+  local status pid
+  status=$(jq -r '.status' "$sf")
+  pid=$(jq -r '.pid // empty' "$sf")
+  if [[ "$status" == "busy" && -n "$pid" ]]; then
+    if ! kill -0 "$pid" 2>/dev/null; then
+      _worker_set_multi "$worker" \
+        '.status="failed" | .error="Process exited unexpectedly" | .completed_at="'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"'
+    fi
+  fi
+}
+
+_init_worker_state() {
+  local worker="$1" pool_dir="$2"
+  cat > "$pool_dir/${worker}.json" <<'JSON'
+{"status":"idle","ticket":null,"pid":null,"started_at":null,"completed_at":null,"log_file":null,"branch_name":null,"exit_code":null,"error":null}
+JSON
+}
+
+_elapsed_display() {
+  local started_at="$1" completed_at="${2:-}"
+  local start_epoch end_epoch
+  start_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$started_at" "+%s" 2>/dev/null || echo 0)
+  [[ "$start_epoch" -eq 0 ]] && echo "-" && return
+  if [[ -n "$completed_at" ]]; then
+    end_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$completed_at" "+%s" 2>/dev/null || date "+%s")
+  else
+    end_epoch=$(date "+%s")
+  fi
+  local diff=$((end_epoch - start_epoch))
+  local mins=$((diff / 60)) secs=$((diff % 60))
+  echo "${mins}m ${secs}s"
+}
+
+# ── Commands ──────────────────────────────────────────────────────────
+
+cmd_list() {
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local base; base=$(_base_dir "$root")
+  local cache
+  cache=$(_cache_get "$root" "$base")
+  if [[ -z "$cache" ]]; then
+    echo "  No workspaces"
+    return
+  fi
+  local name wspath marker
+  while IFS=$'\t' read -r name wspath; do
+    [[ -z "$name" ]] && continue
+    marker=""
+    [[ ! -d "$wspath/.jj" && "$name" != "default" ]] && marker=" (missing)"
+    echo "  $name ➜ $wspath$marker"
+  done <<< "$cache"
+}
+
+cmd_add() {
+  local name="$1"; shift || true
+  local revision=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -r|--revision) revision="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local base; base=$(_base_dir "$root")
+
+  if [[ "$name" == "default" ]]; then
+    echo "$root"
+    return
+  fi
+
+  local wspath="$base/$name"
+
+  # Check cache for existing workspace
+  local cache
+  cache=$(_cache_get "$root" "$base")
+  if echo "$cache" | grep -q "^${name}	"; then
+    echo "$wspath"
+    return
+  fi
+
+  mkdir -p "$base"
+  if [[ -n "$revision" ]]; then
+    jj workspace add --revision "$revision" "$wspath" >&2
+  else
+    jj workspace add "$wspath" >&2
+  fi
+  if [[ -f "$root/.env" && ! -f "$wspath/.env" ]]; then
+    cp "$root/.env" "$wspath/.env"
+  fi
+  local synapse_clone="tools/dev-cli/synapse/clone"
+  if [[ -d "$root/$synapse_clone" && ! -d "$wspath/$synapse_clone" ]]; then
+    mkdir -p "$wspath/$(dirname "$synapse_clone")"
+    rsync -a --exclude '.git' "$root/$synapse_clone/" "$wspath/$synapse_clone/"
+  fi
+  _cache_add_entry "$root" "$name" "$wspath"
+  echo "$wspath"
+}
+
+cmd_rm() {
+  local force=""
+  [[ "${1:-}" == "--force" || "${1:-}" == "-f" ]] && { force="--force"; shift; }
+  [[ $# -eq 0 ]] && { echo "Usage: jj-ws rm [--force] <name> [name...]" >&2; exit 1; }
+
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local base; base=$(_base_dir "$root")
+
+  local name
+  for name in "$@"; do
+    if [[ "$name" == "default" ]]; then
+      echo "Cannot remove default workspace" >&2
+      continue
+    fi
+    local wspath="$base/$name"
+    if [[ -z "$force" && -d "$wspath" ]]; then
+      local output
+      if ! output=$(cd "$wspath" && mise run :dev -- murder 2>&1); then
+        echo "Cleanup failed for $name:" >&2
+        echo "$output" >&2
+        continue
+      fi
+    fi
+    jj workspace forget "$name" 2>&1 || true
+    _cache_rm_entry "$root" "$name"
+    if [[ -d "$wspath" ]]; then
+      rm -rf "$wspath"
+      echo "Deleted $wspath" >&2
+    fi
+  done
+}
+
+cmd_clean() {
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local base; base=$(_base_dir "$root")
+  local cache
+  cache=$(_cache_get "$root" "$base")
+  local removable=()
+  while IFS=$'\t' read -r name wspath; do
+    [[ -z "$name" || "$name" == "default" ]] && continue
+    removable+=("$name")
+  done <<< "$cache"
+
+  if (( ${#removable[@]} == 0 )); then
+    echo "No workspaces to remove"
+    return
+  fi
+
+  echo "Remove ${#removable[@]} workspace(s)?"
+  for name in "${removable[@]}"; do echo "  $name"; done
+  read -rp "Confirm? (y/n) " ans
+  [[ "$ans" == [yY] ]] || return 0
+  for name in "${removable[@]}"; do
+    cmd_rm "$name"
+  done
+}
+
+cmd_where() {
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local base; base=$(_base_dir "$root")
+  echo "repo:       $root"
+  echo "workspaces: $base"
+}
+
+cmd_root() {
+  _repo_root || { echo "Not in a jj repo" >&2; exit 1; }
+}
+
+cmd_path() {
+  local name="${1:-}"
+  [[ -z "$name" ]] && { echo "Usage: jj-ws path <name>" >&2; exit 1; }
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  if [[ "$name" == "default" ]]; then
+    echo "$root"
+  else
+    echo "$(_base_dir "$root")/$name"
+  fi
+}
+
+cmd_refresh() {
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local base; base=$(_base_dir "$root")
+  _cache_rebuild "$root" "$base" >/dev/null
+  echo "Cache refreshed" >&2
+}
+
+# ── Pool commands ─────────────────────────────────────────────────────
+
+cmd_pool() {
+  local subcmd="${1:-list}"; shift || true
+  case "$subcmd" in
+    create|c|resize|r) cmd_pool_resize "$@" ;;
+    list|ls|status) cmd_pool_list ;;
+    destroy)        cmd_pool_destroy ;;
+    reset)          cmd_pool_reset "$@" ;;
+    help)           cmd_pool_help ;;
+    *[!0-9]*)       echo "Unknown pool command: $subcmd" >&2; exit 1 ;;
+    *)              cmd_pool_resize "$subcmd" "$@" ;;
+  esac
+}
+
+cmd_pool_resize() {
+  local new_size=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --size|-s) new_size="$2"; shift 2 ;;
+      -*)        echo "Unknown flag: $1" >&2; exit 1 ;;
+      *)         new_size="$1"; shift ;;
+    esac
+  done
+  [[ -z "$new_size" ]] && { echo "Usage: jj-ws pool resize <N>" >&2; exit 1; }
+
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local pool_dir="$root/.jj/pool"
+  local config="$root/.jj/pool.json"
+
+  # Bootstrap pool if it doesn't exist
+  if [[ ! -f "$config" ]]; then
+    local gh_repo
+    gh_repo=$(jj git remote list 2>/dev/null | awk '/^origin/{print $2}' | sed -E 's#.*[:/]([^/]+/[^/]+)(\.git)?$#\1#')
+    mkdir -p "$pool_dir"
+    jq -n --argjson size 0 --arg gh_repo "$gh_repo" --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{size: $size, gh_repo: $gh_repo, workers: [], created_at: $created_at}' > "$config"
+  fi
+
+  local old_size
+  old_size=$(jq -r '.size' "$config")
+
+  if [[ "$new_size" -eq "$old_size" ]]; then
+    echo "Pool is already size $old_size" >&2
+    return 0
+  fi
+
+  if [[ "$new_size" -gt "$old_size" ]]; then
+    local i
+    for ((i = old_size + 1; i <= new_size; i++)); do
+      local name="worker-$i"
+      cmd_add "$name" >/dev/null
+      _init_worker_state "$name" "$pool_dir"
+      echo "  Created $name" >&2
+    done
+    local workers_json
+    workers_json=$(seq 1 "$new_size" | while read -r n; do echo "worker-$n"; done | jq -R . | jq -s .)
+    jq --argjson size "$new_size" --argjson workers "$workers_json" \
+      '.size = $size | .workers = $workers' "$config" > "${config}.tmp" && mv "${config}.tmp" "$config"
+    echo "Pool expanded from $old_size to $new_size" >&2
+    return 0
+  fi
+
+  # Shrinking - collect idle workers from highest-numbered down
+  local non_idle=0
+  local idle_names=()
+  local i
+  for ((i = old_size; i > new_size; i--)); do
+    local name="worker-$i"
+    local sf="$pool_dir/${name}.json"
+    if [[ ! -f "$sf" ]]; then
+      idle_names+=("$name")
+      continue
+    fi
+    _check_worker_liveness "$name"
+    local status; status=$(jq -r '.status' "$sf")
+    if [[ "$status" == "idle" || "$status" == "done" || "$status" == "failed" ]]; then
+      idle_names+=("$name")
+    else
+      non_idle=$((non_idle + 1))
+    fi
+  done
+
+  local to_remove=$((old_size - new_size))
+  if [[ ${#idle_names[@]} -lt $to_remove ]]; then
+    local min_size=$((old_size - ${#idle_names[@]}))
+    echo "Cannot shrink to $new_size: $non_idle worker(s) are busy." >&2
+    echo "Minimum safe size is $min_size. Use 'jj-ws pool list' to see status." >&2
+    exit 1
+  fi
+
+  for name in "${idle_names[@]}"; do
+    cmd_rm --force "$name" 2>/dev/null || true
+    rm -f "$pool_dir/${name}.json" "$pool_dir/${name}.log"
+    echo "  Removed $name" >&2
+  done
+
+  local workers_json
+  workers_json=$(seq 1 "$new_size" | while read -r n; do echo "worker-$n"; done | jq -R . | jq -s .)
+  jq --argjson size "$new_size" --argjson workers "$workers_json" \
+    '.size = $size | .workers = $workers' "$config" > "${config}.tmp" && mv "${config}.tmp" "$config"
+  echo "Pool shrunk from $old_size to $new_size" >&2
+}
+
+cmd_pool_list() {
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local pool_dir="$root/.jj/pool"
+  local config="$root/.jj/pool.json"
+
+  if [[ ! -f "$config" ]]; then
+    echo "No pool. Run: jj-ws pool create --size N" >&2
+    return 1
+  fi
+
+  local idle=0 busy=0 done_count=0 failed=0
+
+  printf "%-14s %-10s %-14s %s\n" "WORKER" "STATUS" "TICKET" "ELAPSED"
+  printf "%-14s %-10s %-14s %s\n" "------" "------" "------" "-------"
+
+  local workers
+  workers=$(jq -r '.workers[]' "$config")
+  while IFS= read -r worker; do
+    local sf="$pool_dir/${worker}.json"
+    [[ -f "$sf" ]] || continue
+    _check_worker_liveness "$worker"
+
+    local status ticket started_at completed_at
+    status=$(jq -r '.status' "$sf")
+    ticket=$(jq -r '.ticket // "-"' "$sf")
+    started_at=$(jq -r '.started_at // empty' "$sf")
+    completed_at=$(jq -r '.completed_at // empty' "$sf")
+
+    local elapsed="-"
+    if [[ -n "$started_at" ]]; then
+      elapsed=$(_elapsed_display "$started_at" "$completed_at")
+    fi
+
+    local color_start="" color_end=""
+    if [[ -t 1 ]]; then
+      case "$status" in
+        idle)   color_start="\033[2m" ;;
+        busy)   color_start="\033[33m" ;;
+        done)   color_start="\033[32m" ;;
+        failed) color_start="\033[31m" ;;
+      esac
+      color_end="\033[0m"
+    fi
+
+    printf "%-14s ${color_start}%-10s${color_end} %-14s %s\n" \
+      "$worker" "$status" "$ticket" "$elapsed"
+
+    case "$status" in
+      idle)   idle=$((idle + 1)) ;;
+      busy)   busy=$((busy + 1)) ;;
+      done)   done_count=$((done_count + 1)) ;;
+      failed) failed=$((failed + 1)) ;;
+    esac
+  done <<< "$workers"
+
+  echo ""
+  echo "Pool: $idle idle, $busy busy, $done_count done, $failed failed ($(jq -r '.size' "$config") total)"
+}
+
+cmd_pool_destroy() {
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local pool_dir="$root/.jj/pool"
+  local config="$root/.jj/pool.json"
+
+  if [[ ! -f "$config" ]]; then
+    echo "No pool to destroy" >&2
+    return 0
+  fi
+
+  local workers
+  workers=$(jq -r '.workers[]' "$config")
+  while IFS= read -r worker; do
+    local sf="$pool_dir/${worker}.json"
+    if [[ -f "$sf" ]]; then
+      local pid; pid=$(jq -r '.pid // empty' "$sf")
+      if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null || true
+        sleep 1
+        kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+      fi
+    fi
+    cmd_rm --force "$worker" 2>/dev/null || true
+  done <<< "$workers"
+
+  rm -rf "$pool_dir"
+  rm -f "$config"
+  echo "Pool destroyed" >&2
+}
+
+cmd_pool_reset() {
+  local worker="${1:-}"
+  [[ -z "$worker" ]] && { echo "Usage: jj-ws pool reset <worker>" >&2; exit 1; }
+
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local sf; sf=$(_worker_state "$worker")
+  [[ -f "$sf" ]] || { echo "Worker $worker not found" >&2; exit 1; }
+
+  local pid; pid=$(jq -r '.pid // empty' "$sf")
+  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+  fi
+
+  local base; base=$(_base_dir "$root")
+  local wspath="$base/$worker"
+  if [[ -d "$wspath" ]]; then
+    (cd "$wspath" && jj restore 2>/dev/null) || true
+  fi
+
+  local pool_dir; pool_dir=$(_pool_dir)
+  _init_worker_state "$worker" "$pool_dir"
+  echo "Reset $worker to idle" >&2
+}
+
+# ── Dispatch commands ─────────────────────────────────────────────────
+
+cmd_dispatch() {
+  local ticket_id="" fg_mode="" model="sonnet" budget="5"
+  local all_mode=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --fg)     fg_mode=1; shift ;;
+      --model)  model="$2"; shift 2 ;;
+      --budget) budget="$2"; shift 2 ;;
+      --all)    all_mode=1; shift ;;
+      --label)  shift 2 ;;
+      -*)       echo "Unknown flag: $1" >&2; exit 1 ;;
+      *)        ticket_id="$1"; shift ;;
+    esac
+  done
+
+  if [[ -n "$all_mode" ]]; then
+    cmd_dispatch_all --model "$model" --budget "$budget" ${fg_mode:+--fg}
+    return
+  fi
+
+  [[ -z "$ticket_id" ]] && { echo "Usage: jj-ws dispatch <TICKET> [--fg] [--model MODEL] [--budget USD]" >&2; exit 1; }
+
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local config; config=$(_pool_config)
+  [[ -f "$config" ]] || { echo "No pool. Run: jj-ws pool create --size N" >&2; exit 1; }
+
+  local worker
+  worker=$(_find_idle_worker) || { echo "No idle workers. Run: jj-ws pool list" >&2; exit 1; }
+
+  _launch_worker "$worker" "$ticket_id" "$model" "$budget" "$fg_mode"
+}
+
+cmd_dispatch_all() {
+  local model="sonnet" budget="5" fg_mode="" label="ready-for-agent"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --model)  model="$2"; shift 2 ;;
+      --budget) budget="$2"; shift 2 ;;
+      --fg)     fg_mode=1; shift ;;
+      --label)  label="$2"; shift 2 ;;
+      *)        shift ;;
+    esac
+  done
+
+  local root; root=$(_repo_root) || { echo "Not in a jj repo" >&2; exit 1; }
+  local config; config=$(_pool_config)
+  [[ -f "$config" ]] || { echo "No pool. Run: jj-ws pool create --size N" >&2; exit 1; }
+
+  echo "Fetching tickets with label '$label'..." >&2
+
+  local ticket_json
+  ticket_json=$(claude -p \
+    --model haiku \
+    --max-budget-usd 0.05 \
+    --output-format json \
+    --no-session-persistence \
+    "Use the Linear MCP list_issues tool to find issues with label '$label' that are in 'Todo' state for the Ameba team. Return ONLY the issue identifiers (e.g. AMBA-42) as a JSON array in this exact format: {\"tickets\": [\"AMBA-1\", \"AMBA-2\"]}" \
+    2>/dev/null) || { echo "Failed to fetch tickets" >&2; exit 1; }
+
+  local tickets
+  tickets=$(echo "$ticket_json" | jq -r '.result' 2>/dev/null | jq -r '.tickets[]' 2>/dev/null)
+
+  if [[ -z "$tickets" ]]; then
+    echo "No tickets found with label '$label'" >&2
+    return 0
+  fi
+
+  local count=0
+  while IFS= read -r tid; do
+    [[ -z "$tid" ]] && continue
+    local worker
+    worker=$(_find_idle_worker 2>/dev/null) || {
+      echo "No more idle workers. Dispatched $count so far." >&2
+      return 0
+    }
+    _launch_worker "$worker" "$tid" "$model" "$budget" "$fg_mode"
+    ((count++))
+  done <<< "$tickets"
+  echo "Dispatched $count ticket(s)" >&2
+}
+
+_launch_worker() {
+  local worker="$1" ticket_id="$2" model="$3" budget="$4" fg_mode="$5"
+  local root; root=$(_repo_root)
+  local base; base=$(_base_dir "$root")
+  local wspath="$base/$worker"
+  local pool_dir; pool_dir=$(_pool_dir)
+  local log_file="$pool_dir/${worker}.log"
+  local gh_repo; gh_repo=$(_gh_repo)
+  local branch; branch=$(echo "$ticket_id" | tr '[:upper:]' '[:lower:]')
+
+  _worker_set_multi "$worker" \
+    '.status="busy" | .ticket="'"$ticket_id"'" | .started_at="'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'" | .log_file="'"$log_file"'" | .branch_name="'"$branch"'" | .completed_at=null | .exit_code=null | .error=null'
+
+  local system_prompt
+  read -r -d '' system_prompt <<SYSPROMPT || true
+You are an autonomous implementation agent in a jj (Jujutsu VCS) workspace.
+
+CRITICAL RULES:
+- Use jj commands, NEVER git commands.
+- The gh CLI requires: gh -R ${gh_repo} pr create ...
+- To push your work: jj git push --named ${branch}=@
+- You have access to Linear MCP tools for fetching ticket details and updating status.
+- Do NOT ask questions. Make reasonable decisions and proceed.
+- If you encounter ambiguity, document your assumptions in the PR description.
+SYSPROMPT
+
+  local worker_prompt
+  read -r -d '' worker_prompt <<PROMPT || true
+Implement Linear ticket ${ticket_id}.
+
+1. Fetch the ticket: use the Linear MCP get_issue tool with id "${ticket_id}". Read the full description.
+   The "Outcome" section defines your acceptance criteria - verify against it before finishing.
+
+2. Read CLAUDE.md and relevant source files to understand the codebase and conventions.
+
+3. Implement the changes described in the ticket. Follow existing patterns. Write or update tests as specified.
+
+4. Run checks: linting, type checking, and tests. Fix any issues before proceeding.
+
+5. Describe your changes: jj describe -m "${ticket_id}: <concise summary of what you implemented>"
+
+6. Push: jj git push --named ${branch}=@
+
+7. Create a PR:
+   gh -R ${gh_repo} pr create --head ${branch} --title "${ticket_id}: <title from ticket>" --body "<summary of changes and link to Linear ticket>"
+
+8. Update Linear:
+   - Use the Linear MCP save_issue tool to move ${ticket_id} to "In Review" state
+   - Use the Linear MCP save_comment tool to add a comment with: what was implemented, the PR URL, and any assumptions made
+PROMPT
+
+  echo "Dispatching $ticket_id to $worker..." >&2
+
+  if [[ -n "$fg_mode" ]]; then
+    (cd "$wspath" && claude -p \
+      --model "$model" \
+      --max-budget-usd "$budget" \
+      --name "pool:${worker}:${ticket_id}" \
+      --append-system-prompt "$system_prompt" \
+      "$worker_prompt" \
+      2>&1 | tee "$log_file")
+    local ec=$?
+    if [[ $ec -eq 0 ]]; then
+      _worker_set_multi "$worker" '.status="done" | .completed_at="'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'" | .exit_code=0'
+    else
+      _worker_set_multi "$worker" '.status="failed" | .completed_at="'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'" | .exit_code='"$ec"
+    fi
+  else
+    (
+      cd "$wspath"
+      claude -p \
+        --model "$model" \
+        --max-budget-usd "$budget" \
+        --name "pool:${worker}:${ticket_id}" \
+        --append-system-prompt "$system_prompt" \
+        "$worker_prompt" \
+        > "$log_file" 2>&1
+      ec=$?
+      if [[ $ec -eq 0 ]]; then
+        _worker_set_multi "$worker" '.status="done" | .completed_at="'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'" | .exit_code=0'
+      else
+        _worker_set_multi "$worker" '.status="failed" | .completed_at="'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'" | .exit_code='"$ec"
+      fi
+    ) &
+    local pid=$!
+    _worker_set_multi "$worker" '.pid='"$pid"
+    echo "  $worker (PID $pid) -> $ticket_id" >&2
+  fi
+}
+
+# ── Observability ─────────────────────────────────────────────────────
+
+cmd_logs() {
+  local worker="${1:-}"
+  [[ -z "$worker" ]] && { echo "Usage: jj-ws logs <worker>" >&2; exit 1; }
+  local sf; sf=$(_worker_state "$worker")
+  [[ -f "$sf" ]] || { echo "Worker $worker not found" >&2; exit 1; }
+  local log_file; log_file=$(jq -r '.log_file // empty' "$sf")
+  [[ -z "$log_file" || ! -f "$log_file" ]] && { echo "No log file for $worker" >&2; exit 1; }
+  tail -f "$log_file"
+}
+
+# ── Help ──────────────────────────────────────────────────────────────
+
+cmd_help() {
+  cat <<'EOF'
+jj-ws - jj workspace manager
+
+Usage:
+  jj-ws add <name> [-r <rev>]     Create workspace and print path (stdout)
+  jj-ws rm [--force] <name>       Remove workspace
+  jj-ws list                      List workspaces
+  jj-ws clean                     Remove all non-default workspaces
+  jj-ws root                      Print repo root
+  jj-ws where                     Show repo and workspace paths
+  jj-ws path <name>               Print workspace path
+  jj-ws refresh                   Rebuild workspace cache
+
+Pool:
+  jj-ws pool <N>                  Set pool size (creates pool if needed, safe shrink)
+  jj-ws pool list                 Show pool status
+  jj-ws pool destroy              Tear down all workers and remove pool
+  jj-ws pool reset <worker>       Reset a worker to idle
+
+Dispatch:
+  jj-ws dispatch <TICKET>         Assign ticket to idle worker (background)
+  jj-ws dispatch <TICKET> --fg    Assign ticket and watch in foreground
+  jj-ws dispatch --all            Dispatch all ready-for-agent tickets
+    --model MODEL                 Model for worker agents (default: sonnet)
+    --budget USD                  Max spend per worker (default: 5)
+    --label LABEL                 Label filter for --all (default: ready-for-agent)
+
+Observability:
+  jj-ws status                    Alias for pool list
+  jj-ws logs <worker>             Tail a worker's log file
+
+Environment:
+  JJ_WS_DIR    Base directory for workspaces
+               Default: ../<repo-name>-workspaces/
+EOF
+}
+
+# ── CLI ──────────────────────────────────────────────────────────────
+
+command="${1:-}"
+shift || true
+
+case "$command" in
+  add|a)          cmd_add "$@" ;;
+  rm|remove)      cmd_rm "$@" ;;
+  list|ls)        cmd_list ;;
+  clean)          cmd_clean ;;
+  root)           cmd_root ;;
+  where|info)     cmd_where ;;
+  path)           cmd_path "$@" ;;
+  refresh|sync)   cmd_refresh ;;
+  pool)           cmd_pool "$@" ;;
+  dispatch|d)     cmd_dispatch "$@" ;;
+  status)         cmd_pool_list ;;
+  logs|log)       cmd_logs "$@" ;;
+  help|-h|--help) cmd_help ;;
+  "")             cmd_list ;;
+  -*)             echo "Unknown option: $command" >&2; exit 1 ;;
+  *)              cmd_add "$command" "$@" ;;
+esac

@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# jj-forge — workspace-safe forge (fetch + weld + push + spr)
+#
+# Scopes operations to "safe heads": current workspace + orphaned
+# branches (not in any workspace). Excludes other workspaces' chains,
+# preventing sign-on-push rewrites from causing divergence.
+#
+# Usage:
+#   jj-forge              Forge current workspace only
+#   jj-forge --all        Forge all workspaces sequentially
+#   jj-forge -n           Dry-run
+
+# ── Output helpers ───────────────────────────────────────────────────
+
+_bold()   { printf '\033[1m%s\033[0m\n' "$*"; }
+_dim()    { printf '\033[2m%s\033[0m\n' "$*"; }
+_green()  { printf '\033[32m%s\033[0m\n' "$*"; }
+_yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
+_red()    { printf '\033[31m%s\033[0m\n' "$*"; }
+
+# ── Repo discovery (reuses jj-ws pattern) ────────────────────────────
+
+_find_jj_dir() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.jj" ]]; then
+      echo "$dir"
+      return
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+_repo_root() {
+  local ws_root
+  ws_root=$(_find_jj_dir) || return 1
+  local repo_link="$ws_root/.jj/repo"
+  if [[ -f "$repo_link" ]]; then
+    local target
+    target=$(cat "$repo_link")
+    if [[ "$target" == /* ]]; then
+      echo "$(dirname "$(dirname "$target")")"
+      return
+    fi
+  fi
+  echo "$ws_root"
+}
+
+# ── Revsets ───────────────────────────────────────────────────────────
+# All revsets scope to @ (current workspace). In --all mode each
+# workspace is cd'd into, so @ resolves to that workspace's WC.
+
+WELD_SRC="roots(mutable() & mine() & ::@)"
+PUSH_REVS="::@ ~ trunk() ~ conflicts()"
+SPR_REVSET="(::@ ~ trunk()) & mine()"
+
+# ── Parse args ───────────────────────────────────────────────────────
+
+ALL=false
+DRY_RUN=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --all|-a)     ALL=true; shift ;;
+    --dry-run|-n) DRY_RUN=true; shift ;;
+    --help|-h)
+      cat <<'EOF'
+jj-forge — workspace-safe forge
+
+Usage:
+  jj-forge              Forge current workspace (fetch + weld + push + spr)
+  jj-forge --all        Forge all workspaces sequentially
+  jj-forge --dry-run    Show what would happen
+  jj-forge --help       Show this help
+EOF
+      exit 0 ;;
+    *) _red "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+# ── Forge steps ──────────────────────────────────────────────────────
+
+forge_fetch() {
+  _bold "fetch"
+  if $DRY_RUN; then
+    _dim "  jj git fetch"
+  else
+    jj git fetch
+  fi
+}
+
+forge_weld() {
+  local dir="${1:-.}"
+  local label="${2:-}"
+  [[ -n "$label" ]] && _bold "weld  $label" || _bold "weld"
+
+  # Check if there's anything to rebase
+  local roots
+  roots=$(cd "$dir" && jj log -r "$WELD_SRC" --no-graph -T 'change_id.short()' 2>/dev/null || true)
+  if [[ -z "$roots" ]]; then
+    _dim "  nothing to rebase"
+    return 0
+  fi
+
+  if $DRY_RUN; then
+    _dim "  would rebase: $roots"
+  else
+    (cd "$dir" && jj rebase --skip-emptied -s "$WELD_SRC" -d 'main@origin') 2>&1 || {
+      _yellow "  weld skipped (conflicts?)"
+      return 0
+    }
+  fi
+}
+
+forge_smelt() {
+  local dir="${1:-.}"
+  local label="${2:-}"
+  [[ -n "$label" ]] && _bold "smelt $label" || _bold "smelt"
+
+  if $DRY_RUN; then
+    (cd "$dir" && jj git push --dry-run --revisions "$PUSH_REVS" 2>&1) || _dim "  nothing to push"
+  else
+    (cd "$dir" && jj git push --revisions "$PUSH_REVS" 2>&1) || {
+      _yellow "  push skipped"
+      return 0
+    }
+  fi
+}
+
+forge_spr() {
+  local dir="${1:-.}"
+  local label="${2:-}"
+  [[ -n "$label" ]] && _bold "spr   $label" || _bold "spr"
+
+  if $DRY_RUN; then
+    _dim "  JJ_SPR_REVSET='$SPR_REVSET' jj-spr sync --dry-run"
+    (cd "$dir" && JJ_SPR_REVSET="$SPR_REVSET" jj-spr sync --dry-run 2>&1) || true
+  else
+    (cd "$dir" && JJ_SPR_REVSET="$SPR_REVSET" jj-spr sync 2>&1) || {
+      _yellow "  spr sync skipped"
+      return 0
+    }
+  fi
+}
+
+# ── Main ─────────────────────────────────────────────────────────────
+
+if $ALL; then
+  # Forge all workspaces sequentially
+  root=$(_repo_root) || { _red "Not in a jj repo"; exit 1; }
+  cache="$root/.jj/ws-cache"
+  if [[ ! -f "$cache" ]]; then
+    _red "No workspace cache. Run: jj ws refresh"
+    exit 1
+  fi
+
+  forge_fetch
+  echo ""
+
+  while IFS=$'\t' read -r name wspath; do
+    [[ -z "$name" ]] && continue
+    if [[ "$name" != "default" && ! -d "$wspath/.jj" ]]; then
+      _yellow "skip  $name (missing)"
+      echo ""
+      continue
+    fi
+    # Skip workspaces with conflicted working copy
+    has_conflict=$(cd "$wspath" && jj log -r '@ & conflicts()' --no-graph -T '"yes"' 2>/dev/null || true)
+    if [[ "$has_conflict" == "yes" ]]; then
+      _yellow "skip  $name (conflicts)"
+      echo ""
+      continue
+    fi
+    forge_weld "$wspath" "$name"
+    forge_smelt "$wspath" "$name"
+    echo ""
+  done < "$cache"
+
+  # SPR sync from default workspace
+  forge_spr "$root" "all"
+
+else
+  # Forge current workspace only
+  forge_fetch
+  echo ""
+  forge_weld
+  forge_smelt
+  forge_spr
+fi
+
+_green "done"

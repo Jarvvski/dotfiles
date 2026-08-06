@@ -1,0 +1,2089 @@
+#!/usr/bin/env bun
+
+/**
+ * jj-wsx: Interactive workspace manager TUI for Jujutsu.
+ *
+ * Usage:
+ *   jj-wsx              Open the workspace manager (fullscreen)
+ *   jj-wsx --vertical   Vertical layout for portrait monitors
+ *
+ * Keys:
+ *   enter    Open workspace in new kitty tab (two-pane: claude + shell)
+ *   n        Create new workspace
+ *   d        Delete selected workspace
+ *   r        Refresh all data
+ *   j/k      Navigate up/down
+ *   f        Forge selected workspace (fetch + weld + push + spr)
+ *   F        Forge all workspaces
+ *   q        Quit
+ */
+
+// kitty supports OSC 8 hyperlinks but isn't detected by supports-hyperlinks
+// Must be set before ink-link is imported (hence dynamic import below)
+process.env.FORCE_HYPERLINK = "1";
+
+import { $ } from "bun";
+import { readFileSync, readdirSync, existsSync, statSync, watch } from "fs";
+import { dirname, basename } from "path";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { render, Text, Box, useInput, useApp, useStdout } from "ink";
+const Link = (await import("ink-link")).default;
+
+// --- Types ---
+
+interface Workspace {
+  name: string;
+  path: string;
+  missing: boolean;
+  isDefault: boolean;
+}
+
+interface PR {
+  number: number;
+  title: string;
+  isDraft: boolean;
+  reviewDecision: string;
+  url: string;
+  baseRefName: string;
+  headRefName: string;
+}
+
+interface PRNode {
+  pr: PR;
+  isRoot: boolean;
+}
+
+interface DiffStatLine {
+  file: string;
+  total: number;
+  ratio: number; // 0-1, fraction that are additions
+}
+
+type ClaudeStatus = "active" | "idle" | "none";
+
+interface Stats {
+  claudeAgents: number | "unavailable" | null;
+  prs: PRNode[] | "unavailable" | null;
+  reviewPrs: PR[] | null;
+}
+
+const TRUNK_REV = "trunk()";
+
+function visorSocket(): string[] {
+  try {
+    const match = readdirSync("/tmp").find(f => f.startsWith("kitty-visor-"));
+    return match ? ["--to", `unix:/tmp/${match}`] : [];
+  } catch {
+    return [];
+  }
+}
+
+// --- Repo discovery ---
+
+function findJjDir(from: string): string | null {
+  let dir = from;
+  while (dir !== "/") {
+    if (existsSync(`${dir}/.jj`)) return dir;
+    dir = dirname(dir);
+  }
+  return null;
+}
+
+function resolveRepoRoot(wsDir: string): string {
+  const repoFile = `${wsDir}/.jj/repo`;
+  if (existsSync(repoFile) && statSync(repoFile).isFile()) {
+    let target = readFileSync(repoFile, "utf-8").trim();
+    if (!target.startsWith("/")) target = `${wsDir}/.jj/${target}`;
+    return dirname(dirname(target));
+  }
+  return wsDir;
+}
+
+function readCache(root: string): Workspace[] {
+  const cacheFile = `${root}/.jj/ws-cache`;
+  if (!existsSync(cacheFile)) return [];
+  const content = readFileSync(cacheFile, "utf-8").trim();
+  if (!content) return [];
+  return content
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [name, ...pathParts] = line.split("\t");
+      const wsPath = pathParts.join("\t");
+      const isDefault = name === "default";
+      const missing = !isDefault && !existsSync(`${wsPath}/.jj`);
+      return { name, path: wsPath, missing, isDefault };
+    });
+}
+
+function fuzzyMatch(pattern: string, str: string): boolean {
+  const lower = str.toLowerCase();
+  let pi = 0;
+  for (let si = 0; si < lower.length && pi < pattern.length; si++) {
+    if (lower[si] === pattern[pi]) pi++;
+  }
+  return pi === pattern.length;
+}
+
+function shortenPath(p: string): string {
+  const home = process.env.HOME || "";
+  return home && p.startsWith(home) ? `~${p.slice(home.length)}` : p;
+}
+
+// --- Stats fetching ---
+
+async function fetchWorkspaceStatuses(workspaces: Workspace[]): Promise<{ statuses: Map<string, ClaudeStatus>; agentCount: number | "unavailable" }> {
+  try {
+    const vs = visorSocket();
+    const result = await $`kitten @ ${vs} ls`.nothrow().quiet();
+    if (result.exitCode !== 0) {
+      const stderr = result.stderr.toString();
+      if (stderr.includes("not found") || stderr.includes("No such file"))
+        return { statuses: new Map(), agentCount: "unavailable" };
+      return { statuses: new Map(), agentCount: 0 };
+    }
+    const data = JSON.parse(result.stdout.toString());
+    let agentCount = 0;
+    const statuses = new Map<string, ClaudeStatus>();
+
+    // Build a list of all tabs with their claude + caffeinate status
+    const tabs: { title: string; hasClaude: boolean; hasCaffeinate: boolean }[] = [];
+    for (const osWindow of data) {
+      for (const tab of osWindow.tabs || []) {
+        let hasClaude = false;
+        let hasCaffeinate = false;
+        for (const win of tab.windows || []) {
+          for (const proc of win.foreground_processes || []) {
+            const cmdline = (proc.cmdline || []) as string[];
+            const isClaude = cmdline.some(
+              (arg: string) =>
+                (arg === "claude" || arg.endsWith("/claude")) &&
+                !arg.includes("jj-wsx"),
+            );
+            if (isClaude) {
+              hasClaude = true;
+              agentCount++;
+            }
+            if (cmdline[0] === "caffeinate" || cmdline[0]?.endsWith("/caffeinate")) {
+              hasCaffeinate = true;
+            }
+          }
+        }
+        tabs.push({ title: tab.title || "", hasClaude, hasCaffeinate });
+      }
+    }
+
+    // Match workspaces to tabs
+    // Claude active = claude + caffeinate running (Claude uses caffeinate while working)
+    // Claude idle = claude running but no caffeinate (waiting for input)
+    for (const ws of workspaces) {
+      if (ws.isDefault) continue;
+      const matchedTab = tabs.find((t) => t.title.includes(ws.name));
+      if (matchedTab) {
+        if (matchedTab.hasClaude && matchedTab.hasCaffeinate) {
+          statuses.set(ws.name, "active");
+        } else {
+          statuses.set(ws.name, "idle");
+        }
+      } else {
+        statuses.set(ws.name, "none");
+      }
+    }
+
+    return { statuses, agentCount };
+  } catch {
+    return { statuses: new Map(), agentCount: "unavailable" };
+  }
+}
+
+async function fetchIDEStatuses(workspaces: Workspace[]): Promise<Set<string>> {
+  try {
+    const result = await $`osascript -e ${"tell application \"System Events\"\nif not (exists process \"IntelliJ IDEA\") then return \"\"\ntell process \"IntelliJ IDEA\"\nreturn name of every window\nend tell\nend tell"}`.nothrow().quiet();
+    if (result.exitCode !== 0) return new Set();
+    const titles = result.stdout.toString().trim();
+    if (!titles) return new Set();
+    const open = new Set<string>();
+    for (const ws of workspaces) {
+      if (ws.isDefault) continue;
+      if (titles.includes(ws.name)) open.add(ws.name);
+    }
+    return open;
+  } catch {
+    return new Set();
+  }
+}
+
+function parseDiffStat(output: string): { added: number; removed: number } {
+  const lines = output.trim().split("\n");
+  const summary = lines[lines.length - 1] || "";
+  const insMatch = summary.match(/(\d+) insertion/);
+  const delMatch = summary.match(/(\d+) deletion/);
+  return {
+    added: insMatch ? parseInt(insMatch[1], 10) : 0,
+    removed: delMatch ? parseInt(delMatch[1], 10) : 0,
+  };
+}
+
+function buildPRTree(prs: PR[]): PRNode[] {
+  const byHead = new Map<string, PR>();
+  for (const pr of prs) byHead.set(pr.headRefName, pr);
+
+  const children = new Map<number, PR[]>();
+  const roots: PR[] = [];
+  for (const pr of prs) {
+    const parent = byHead.get(pr.baseRefName);
+    if (parent) {
+      const list = children.get(parent.number) || [];
+      list.push(pr);
+      children.set(parent.number, list);
+    } else {
+      roots.push(pr);
+    }
+  }
+
+  const result: PRNode[] = [];
+  function walk(pr: PR, isRoot: boolean) {
+    result.push({ pr, isRoot });
+    const kids = children.get(pr.number) || [];
+    kids.sort((a, b) => a.number - b.number);
+    for (const child of kids) walk(child, false);
+  }
+  roots.sort((a, b) => a.number - b.number);
+  for (const root of roots) walk(root, true);
+  return result;
+}
+
+async function fetchPRs(): Promise<PRNode[] | "unavailable"> {
+  try {
+    const result =
+      await $`gh pr list --author=@me --json number,title,isDraft,reviewDecision,url,baseRefName,headRefName`
+        .nothrow()
+        .quiet();
+    if (result.exitCode !== 0) {
+      const stderr = result.stderr.toString();
+      if (stderr.includes("auth") || stderr.includes("not found") || stderr.includes("No such file")) return "unavailable";
+      return [];
+    }
+    const prs: PR[] = JSON.parse(result.stdout.toString());
+    return buildPRTree(prs);
+  } catch {
+    return "unavailable";
+  }
+}
+
+async function fetchReviewPRs(): Promise<PR[]> {
+  try {
+    const result =
+      await $`gh pr list --search "review-requested:@me" --json number,title,isDraft,reviewDecision,url,baseRefName,headRefName`
+        .nothrow()
+        .quiet();
+    if (result.exitCode !== 0) return [];
+    return JSON.parse(result.stdout.toString());
+  } catch {
+    return [];
+  }
+}
+
+async function fetchDefaultBehind(repoRoot: string): Promise<number | null> {
+  try {
+    const r = await $`jj log -r "trunk() ~ ::@" --count --color never`
+      .env({ HOME: process.env.HOME! })
+      .cwd(repoRoot)
+      .nothrow()
+      .quiet();
+    if (r.exitCode !== 0) return null;
+    return parseInt(r.stdout.toString().trim(), 10) || 0;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureGpgUnlocked(repoRoot: string): Promise<boolean> {
+  try {
+    const keyResult = await $`jj config get signing.key`
+      .cwd(repoRoot).nothrow().quiet();
+    if (keyResult.exitCode !== 0) return true;
+    const key = keyResult.stdout.toString().trim();
+    if (!key) return true;
+    // Quick silent check
+    const check = await $`echo test | gpg --batch --no-tty --pinentry-mode error -u ${key} --sign --output /dev/null`
+      .nothrow().quiet();
+    if (check.exitCode === 0) return true;
+    // Trigger pinentry-mac GUI dialog to unlock
+    const unlock = await $`echo test | gpg --batch -u ${key} --sign --output /dev/null`
+      .nothrow().quiet();
+    return unlock.exitCode === 0;
+  } catch {
+    return true;
+  }
+}
+
+async function fetchDiffStatLines(wsPath: string): Promise<{ files: DiffStatLine[]; loc: { added: number; removed: number } }> {
+  try {
+    const r = await $`jj diff --stat --from ${TRUNK_REV}`
+      .env({ HOME: process.env.HOME! })
+      .cwd(wsPath)
+      .nothrow()
+      .quiet();
+    if (r.exitCode !== 0) return { files: [], loc: { added: 0, removed: 0 } };
+    const output = r.stdout.toString().trim();
+    const lines = output.split("\n");
+    const files: DiffStatLine[] = [];
+    for (const line of lines) {
+      const m = line.match(/^\s*(.+?)\s+\|\s+(\d+)\s+([+-]+)\s*$/);
+      if (m) {
+        const bar = m[3];
+        const plusCount = (bar.match(/\+/g) || []).length;
+        files.push({
+          file: m[1],
+          total: parseInt(m[2], 10),
+          ratio: bar.length > 0 ? plusCount / bar.length : 0.5,
+        });
+      }
+    }
+    const loc = parseDiffStat(output);
+    return { files, loc };
+  } catch {
+    return { files: [], loc: { added: 0, removed: 0 } };
+  }
+}
+
+async function fetchJJGraph(repoRoot: string, workspaces: Workspace[]): Promise<string[]> {
+  try {
+    const tmpl = 'change_id.short(8) ++ " " ++ if(working_copies, working_copies ++ " ", "") ++ description.first_line()';
+    const wsRevs = ["@", ...workspaces.filter((w) => !w.isDefault).map((w) => `${w.name}@`)].join(" | ");
+    const revset = `trunk() | (ancestors(${wsRevs}) & trunk()..)`;
+    const r = await $`jj log -r ${revset} --color never --no-pager -T ${tmpl}`
+      .env({ HOME: process.env.HOME! })
+      .cwd(repoRoot)
+      .nothrow()
+      .quiet();
+    if (r.exitCode !== 0) return [];
+    return r.stdout.toString().trimEnd().split("\n");
+  } catch {
+    return [];
+  }
+}
+
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+const stripAnsi = (s: string) => s.replace(ANSI_RE, "");
+const WORLD_CHANGE_ID_RE = /^[@│├─╯╭○◉◆◎┤┬┴┼~ ]*([a-z]{4,12})\s/;
+
+async function fetchWorldGraph(repoRoot: string): Promise<string[]> {
+  try {
+    const r = await $`jj log --limit 300 --color always --no-pager`
+      .env({ HOME: process.env.HOME! })
+      .cwd(repoRoot)
+      .nothrow()
+      .quiet();
+    if (r.exitCode !== 0) return [];
+    return r.stdout.toString().trimEnd().split("\n");
+  } catch {
+    return [];
+  }
+}
+
+async function doGitFetch(repoRoot: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const r = await $`jj git fetch`
+      .cwd(repoRoot)
+      .nothrow()
+      .quiet();
+    if (r.exitCode !== 0) {
+      return { ok: false, error: r.stderr.toString().trim().split("\n")[0] || `exit ${r.exitCode}` };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || "unknown error" };
+  }
+}
+
+function formatTimeAgo(date: Date): string {
+  const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  return `${Math.floor(secs / 60)}m ago`;
+}
+
+async function fetchWorkspaceChain(repoRoot: string, wsName: string): Promise<Set<string>> {
+  try {
+    const tmpl = 'change_id.short(8) ++ "\n"';
+    const revset = `trunk()..${wsName}@`;
+    const r = await $`jj log -r ${revset} --no-graph --color never --no-pager -T ${tmpl}`
+      .env({ HOME: process.env.HOME! })
+      .cwd(repoRoot)
+      .nothrow()
+      .quiet();
+    if (r.exitCode !== 0) return new Set();
+    return new Set(r.stdout.toString().trim().split("\n").filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
+
+async function fetchFileDiff(wsPath: string, file: string): Promise<string[]> {
+  try {
+    const raw = await $`jj diff --git --color=never --from ${TRUNK_REV} -- ${file}`
+      .env({ HOME: process.env.HOME! })
+      .cwd(wsPath)
+      .nothrow()
+      .quiet();
+    if (raw.exitCode !== 0) return [];
+    const rawLines = raw.stdout.toString().split("\n");
+
+    // Strip diff header, keep from @@ hunks onward
+    const hunkStart = rawLines.findIndex((l) => l.startsWith("@@"));
+    if (hunkStart < 0) return [];
+    const hunkLines = rawLines.slice(hunkStart);
+
+    // Strip +/- prefix for syntax highlighting, track which lines are adds/removes
+    const markers: string[] = [];
+    const stripped: string[] = [];
+    for (const line of hunkLines) {
+      if (line.startsWith("@@")) {
+        markers.push("@@");
+        stripped.push(line);
+      } else if (line.startsWith("+")) {
+        markers.push("+");
+        stripped.push(line.slice(1));
+      } else if (line.startsWith("-")) {
+        markers.push("-");
+        stripped.push(line.slice(1));
+      } else if (line.startsWith(" ")) {
+        markers.push(" ");
+        stripped.push(line.slice(1));
+      } else {
+        markers.push(" ");
+        stripped.push(line);
+      }
+    }
+
+    // Detect language from file extension
+    const ext = file.includes(".") ? file.split(".").pop() || "" : "";
+    const langMap: Record<string, string> = {
+      kt: "kotlin", kts: "kotlin", java: "java", py: "python", ts: "typescript",
+      tsx: "tsx", js: "javascript", jsx: "jsx", json: "json", yml: "yaml",
+      yaml: "yaml", xml: "xml", sql: "sql", sh: "bash", zsh: "bash",
+      md: "markdown", toml: "toml", gradle: "groovy", tf: "hcl",
+      proto: "protobuf", css: "css", html: "html", mustache: "html",
+    };
+    const lang = langMap[ext] || ext;
+    const langArg = lang ? ["-l", lang] : [];
+
+    // Pipe stripped content through bat for syntax highlighting
+    const batResult = await $`echo ${stripped.join("\n")} | bat --color=always --style=plain --paging=never --theme=TwoDark ${langArg}`
+      .nothrow()
+      .quiet();
+
+    if (batResult.exitCode !== 0) {
+      // Fallback: return raw hunk lines
+      return hunkLines;
+    }
+
+    // Re-attach diff markers to bat-highlighted lines
+    const highlighted = batResult.stdout.toString().split("\n");
+    const result: string[] = [];
+    for (let i = 0; i < Math.min(markers.length, highlighted.length); i++) {
+      const marker = markers[i];
+      const hl = highlighted[i];
+      if (marker === "@@") {
+        result.push(`\x1b[36m${hunkLines[i]}\x1b[0m`);
+      } else if (marker === "+") {
+        result.push(`\x1b[32m+\x1b[0m${hl}`);
+      } else if (marker === "-") {
+        result.push(`\x1b[31m-\x1b[0m${hl}`);
+      } else {
+        result.push(` ${hl}`);
+      }
+    }
+    return result;
+  } catch {
+    return [];
+  }
+}
+
+// --- Kitty tab launch ---
+
+async function createKittyTab(name: string, path: string, focus = true): Promise<void> {
+  const vs = visorSocket();
+  const noFocus = focus ? [] : ["--dont-take-focus"];
+  const result =
+    await $`kitten @ ${vs} launch --type=tab --tab-title ${name} --cwd=${path} ${noFocus} -- zsh -ic "claude; exec zsh"`
+      .nothrow()
+      .quiet();
+  const winId = result.stdout.toString().trim();
+  if (winId) {
+    const rightTop =
+      await $`kitten @ ${vs} launch --match id:${winId} --location=vsplit --cwd=${path} ${noFocus} -- zsh -ic "mise trust ./; clear; exec zsh"`
+        .nothrow()
+        .quiet();
+    const rightTopId = rightTop.stdout.toString().trim();
+    if (rightTopId) {
+      await $`kitten @ ${vs} launch --match id:${rightTopId} --location=hsplit --cwd=${path} ${noFocus} -- zsh -ic "mise trust ./; clear; exec zsh"`
+        .nothrow()
+        .quiet();
+    }
+    await $`kitten @ ${vs} focus-window --match id:${winId}`.nothrow().quiet();
+  }
+}
+
+async function openOrFocusTab(name: string, path: string, focus: boolean): Promise<"focused" | "opened" | "exists"> {
+  const vs = visorSocket();
+  const r = await $`kitten @ ${vs} focus-tab --match title:${name}`.nothrow().quiet();
+  if (r.exitCode === 0) {
+    if (focus) return "focused";
+    return "exists";
+  }
+  await createKittyTab(name, path, focus);
+  return "opened";
+}
+
+async function openInIDE(wsPath: string, repoRoot: string): Promise<void> {
+  const ideaDir = `${wsPath}/.idea`;
+  const mainIdea = `${repoRoot}/.idea`;
+  if (!existsSync(ideaDir) && existsSync(mainIdea)) {
+    await $`ln -s ${mainIdea} ${ideaDir}`.nothrow().quiet();
+  }
+  await $`idea ${wsPath}`.nothrow().quiet();
+}
+
+async function closeIDEWindow(wsName: string): Promise<void> {
+  const script = [
+    'tell application "System Events"',
+    'if not (exists process "IntelliJ IDEA") then return',
+    'tell process "IntelliJ IDEA"',
+    "repeat with w in windows",
+    `if name of w contains "${wsName}" then`,
+    'perform action "AXRaise" of w',
+    "click button 1 of w",
+    "end if",
+    "end repeat",
+    "end tell",
+    "end tell",
+  ].join("\n");
+  await $`osascript -e ${script}`.nothrow().quiet();
+}
+
+// --- Components ---
+
+function Separator() {
+  return <Box width={2} />;
+}
+
+function truncate(str: string, max: number): string {
+  return str.length > max ? str.slice(0, max - 1) + "\u2026" : str;
+}
+
+const ACTIVE_FRAMES = ["\u2740", "\u273c", "\u2734", "\u2733", "\u271b", "\u2022"]; // ❀ ✼ ✴ ✳ ✛ •
+
+function statusIcon(status: ClaudeStatus, tick: number): { char: string; color: string } {
+  if (status === "active") {
+    // Bounce: 0 1 2 3 4 5 4 3 2 1 0 1 2 ...
+    const len = ACTIVE_FRAMES.length;
+    const cycle = (len - 1) * 2;
+    const pos = tick % cycle;
+    const idx = pos < len ? pos : cycle - pos;
+    return { char: ACTIVE_FRAMES[idx], color: "#FF9500" };
+  }
+  if (status === "idle") return { char: "\u273b", color: "red" }; // ✻
+  return { char: "\u00b7", color: "gray" }; // ·
+}
+
+
+function AnimatedStatusIcon({ status }: { status: ClaudeStatus }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (status !== "active") return;
+    const interval = setInterval(() => setTick((t) => t + 1), 150);
+    return () => clearInterval(interval);
+  }, [status]);
+  const { char, color } = statusIcon(status, tick);
+  return <Text color={color}>{char}</Text>;
+}
+function WorkspaceList({
+  workspaces,
+  selected,
+  width,
+  compact,
+  dimmed,
+  statuses,
+  ideOpen,
+}: {
+  workspaces: Workspace[];
+  selected: number;
+  width: number;
+  compact?: boolean;
+  dimmed?: boolean;
+  statuses: Map<string, ClaudeStatus>;
+  ideOpen: Set<string>;
+}) {
+  if (workspaces.length === 0) {
+    return <Text color="gray">{" No workspaces"}</Text>;
+  }
+
+  if (compact) {
+    return (
+      <Box flexDirection="column" width={width}>
+        {workspaces.map((ws, i) => {
+          const isSelected = i === selected;
+          const suffix = ws.missing ? " !" : "";
+          const hasIDE = ideOpen.has(ws.name);
+          return (
+            <Box key={ws.name} width={width}>
+              <Box width={3}><Text>{" "}<AnimatedStatusIcon status={statuses.get(ws.name) || "none"} /></Text></Box>
+              <Box width={2}><Text>{hasIDE ? <Text color="magenta">{"\uf1c9"}</Text> : " "}</Text></Box>
+              <Text wrap="truncate" inverse={!dimmed && isSelected} dimColor={dimmed}>
+                {` ${truncate(ws.name, width - 7 - suffix.length)}`}
+                <Text color={dimmed ? undefined : "red"}>{suffix}</Text>
+                {" "}
+              </Text>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  }
+
+  const maxName = Math.max(...workspaces.map((ws) => ws.name.length));
+  const nameColWidth = maxName + 3;
+
+  return (
+    <Box flexDirection="column" width={width}>
+      {workspaces.map((ws, i) => {
+        const isSelected = i === selected;
+        const nameStr = ws.name.padEnd(nameColWidth);
+        const suffix = ws.missing ? " (missing)" : "";
+        const hasIDE = ideOpen.has(ws.name);
+        const pathMax = width - nameColWidth - 7 - suffix.length;
+        const pathStr = truncate(shortenPath(ws.path), Math.max(4, pathMax));
+
+        return (
+          <Box key={ws.name} width={width}>
+            <Box width={3}><Text>{" "}<AnimatedStatusIcon status={statuses.get(ws.name) || "none"} /></Text></Box>
+            <Box width={2}><Text>{hasIDE ? <Text color="magenta">{"\uf1c9"}</Text> : " "}</Text></Box>
+            <Text wrap="truncate" inverse={!dimmed && isSelected} dimColor={dimmed}>
+              {` ${nameStr}`}
+              <Text color={dimmed ? undefined : isSelected ? undefined : "gray"}>{pathStr}</Text>
+              <Text color={dimmed ? undefined : "red"}>{suffix}</Text>
+              {" "}
+            </Text>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+function prStatusLabel(pr: PR): { text: string; color: string } {
+  if (pr.isDraft) return { text: "draft", color: "gray" };
+  switch (pr.reviewDecision) {
+    case "APPROVED":
+      return { text: "approved", color: "green" };
+    case "CHANGES_REQUESTED":
+      return { text: "changes", color: "red" };
+    case "REVIEW_REQUIRED":
+      return { text: "review", color: "yellow" };
+    default:
+      return { text: "pending", color: "gray" };
+  }
+}
+
+function PRList({
+  prs,
+  width,
+  titleMax,
+  maxItems,
+  linkColor,
+}: {
+  prs: PRNode[];
+  width: number;
+  titleMax: number;
+  maxItems?: number;
+  linkColor?: string;
+}) {
+  const items = maxItems ? prs.slice(0, maxItems) : prs;
+  return (
+    <Box flexDirection="column" width={width}>
+      {items.map((node, i) => {
+        const { pr, isRoot } = node;
+        const st = prStatusLabel(pr);
+        const prefix = isRoot ? " " : " \u221f";
+        const title = truncate(pr.title, titleMax);
+        const pad = Math.max(0, titleMax - pr.title.length);
+        const spacer = isRoot && i > 0;
+        return (
+          <React.Fragment key={pr.number}>
+            {spacer && <Box width={width}><Text>{" "}</Text></Box>}
+            <Box width={width}>
+              <Text wrap="truncate">
+                <Text dimColor>{prefix}</Text>
+                <Text color={(linkColor || "blue") as any}><Link url={pr.url}>#{pr.number}</Link></Text>
+                {` ${title}${" ".repeat(pad)}  `}
+                <Text color={st.color as any}>{st.text}</Text>
+              </Text>
+            </Box>
+          </React.Fragment>
+        );
+      })}
+    </Box>
+  );
+}
+
+function StatsPanel({
+  stats,
+  panelWidth,
+  wsLoc,
+  wsName,
+}: {
+  stats: Stats;
+  panelWidth: number;
+  wsLoc: { added: number; removed: number } | null;
+  wsName: string;
+}) {
+  // "#1234 " = ~7, "  approved" = ~10, padding = 2
+  const statusWidth = 10;
+  const numWidth = 7;
+  const connectorWidth = 3; // " o " or " | "
+  const titleMax = Math.max(4, panelWidth - numWidth - statusWidth - connectorWidth - 2);
+
+  const allPrs = stats.prs;
+  const filteredPrs = useMemo(() => {
+    if (allPrs === null || allPrs === "unavailable") return allPrs;
+    return buildPRTree(allPrs.map((n) => n.pr).filter((pr) =>
+      pr.headRefName.startsWith(`ajarvis/${wsName}`) ||
+      pr.baseRefName.startsWith(`ajarvis/${wsName}`)
+    ));
+  }, [allPrs, wsName]);
+
+  return (
+    <Box flexDirection="column" width={panelWidth}>
+      <Text bold dimColor>
+        {" Claude Agents"}
+      </Text>
+      <Text>
+        {stats.claudeAgents === null ? (
+          <Text color="gray">{" ..."}</Text>
+        ) : stats.claudeAgents === "unavailable" ? (
+          <Text color="gray">{" n/a (kitten)"}</Text>
+        ) : (
+          <Text color={stats.claudeAgents > 0 ? "green" : "gray"}>
+            {` ${stats.claudeAgents} running`}
+          </Text>
+        )}
+      </Text>
+
+      <Text>{" "}</Text>
+
+      <Text bold dimColor>
+        {" LOC (from trunk)"}
+      </Text>
+      {wsLoc !== null ? (
+        <Text>
+          <Text color="green">{` +${wsLoc.added.toLocaleString()}`}</Text>
+          <Text>{"    "}</Text>
+          <Text color="red">{`-${wsLoc.removed.toLocaleString()}`}</Text>
+        </Text>
+      ) : (
+        <Text color="gray">{" ..."}</Text>
+      )}
+
+      <Text>{" "}</Text>
+
+      <Text bold dimColor>
+        {filteredPrs !== null && filteredPrs !== "unavailable"
+          ? ` Workspace PRs (${filteredPrs.length})`
+          : " Workspace PRs"}
+      </Text>
+      <Box flexDirection="column" height={5} width={panelWidth}>
+        {filteredPrs === null ? (
+          <Text color="gray">{" ..."}</Text>
+        ) : filteredPrs === "unavailable" ? (
+          <Text color="gray">{" n/a (gh)"}</Text>
+        ) : filteredPrs.length === 0 ? (
+          <Text color="gray">{" none"}</Text>
+        ) : (
+          <PRList prs={filteredPrs} width={panelWidth} titleMax={titleMax} maxItems={5} />
+        )}
+      </Box>
+      <Text>{" "}</Text>
+
+      <Text bold dimColor>
+        {allPrs !== null && allPrs !== "unavailable"
+          ? ` All PRs (${allPrs.length})`
+          : " All PRs"}
+      </Text>
+      {allPrs === null ? (
+        <Text color="gray">{" ..."}</Text>
+      ) : allPrs === "unavailable" ? (
+        <Text color="gray">{" n/a (gh)"}</Text>
+      ) : allPrs.length === 0 ? (
+        <Text color="gray">{" none"}</Text>
+      ) : (
+        <PRList prs={allPrs} width={panelWidth} titleMax={titleMax} />
+      )}
+
+      {stats.reviewPrs !== null && stats.reviewPrs.length > 0 && (
+        <>
+          <Text>{" "}</Text>
+          <Text bold dimColor>{` To review (${stats.reviewPrs.length})`}</Text>
+          <PRList prs={stats.reviewPrs.map((pr) => ({ pr, isRoot: true }))} width={panelWidth} titleMax={titleMax} linkColor="magenta" />
+        </>
+      )}
+    </Box>
+  );
+}
+
+const HOTKEYS_WORKSPACES = [
+  { key: "j/k", action: "navigate" },
+  { key: "enter", action: "open" },
+  { key: "o", action: "open (bg)" },
+  { key: "n", action: "new workspace" },
+  { key: "N", action: "new (bg)" },
+  { key: "x", action: "close tab" },
+  { key: "f", action: "forge" },
+  { key: "F", action: "forge all" },
+  { key: "g", action: "forge default" },
+  { key: "i", action: "open in IDE" },
+  { key: "I", action: "focus IDE" },
+  { key: "d", action: "delete" },
+  { key: "r", action: "refresh" },
+  { key: "tab/l", action: "files" },
+  { key: "esc", action: "quit" },
+];
+
+const HOTKEYS_FILES = [
+  { key: "type", action: "fuzzy filter" },
+  { key: "esc", action: "back/clear" },
+  { key: "up/dn", action: "navigate" },
+  { key: "pgup/dn", action: "page" },
+  { key: "enter/tab", action: "diff" },
+  { key: "shift+tab/left", action: "back" },
+];
+
+const HOTKEYS_DIFF = [
+  { key: "j/k", action: "scroll" },
+  { key: "pgup/dn", action: "page" },
+  { key: "esc", action: "back" },
+  { key: "shift+tab/left", action: "back" },
+];
+
+function HotkeyOverlay({ hotkeys, columns = 3 }: { hotkeys: { key: string; action: string }[]; columns?: number }) {
+  const rows: { key: string; action: string }[][] = [];
+  for (let i = 0; i < hotkeys.length; i += columns) {
+    rows.push(hotkeys.slice(i, i + columns));
+  }
+  const cellWidth = Math.max(...hotkeys.map((h) => h.key.length + h.action.length + 4), 20);
+
+  return (
+    <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
+      <Box flexDirection="column" borderStyle="round" borderColor="gray" paddingX={2} paddingY={1}>
+        <Box justifyContent="center" marginBottom={1}>
+          <Text bold color="cyan">Hotkeys</Text>
+        </Box>
+        {rows.map((row, ri) => (
+          <Box key={ri}>
+            {row.map((h, ci) => (
+              <Box key={ci} width={cellWidth}>
+                <Text bold color="cyan">{h.key}</Text>
+                <Text color="gray">{" -> "}{h.action}</Text>
+              </Box>
+            ))}
+          </Box>
+        ))}
+        <Box justifyContent="center" marginTop={1}>
+          <Text color="gray" dimColor>Press any key to dismiss</Text>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function JJGraphPanel({
+  lines,
+  width,
+  height,
+  wsChain,
+  title = "Graph",
+  freshness,
+  raw,
+}: {
+  lines: string[] | null;
+  width: number;
+  height: number;
+  wsChain: Set<string>;
+  title?: string;
+  freshness?: Map<string, number>;
+  raw?: boolean;
+}) {
+  if (lines === null) {
+    return (
+      <Box flexDirection="column" width={width}>
+        <Text bold dimColor>{` ${title}`}</Text>
+        <Text color="gray">{" ..."}</Text>
+      </Box>
+    );
+  }
+  if (lines.length === 0) {
+    return (
+      <Box flexDirection="column" width={width}>
+        <Text bold dimColor>{` ${title}`}</Text>
+        <Text color="gray">{" no changes"}</Text>
+      </Box>
+    );
+  }
+
+  const now = Date.now();
+
+  // Raw mode: pass through ANSI-colored lines from jj directly
+  if (raw) {
+    const visible = lines.slice(0, height - 1);
+    return (
+      <Box flexDirection="column" width={width}>
+        <Text bold dimColor>{` ${title}`}</Text>
+        {visible.map((line, i) => {
+          const plain = stripAnsi(line);
+          const idMatch = plain.match(WORLD_CHANGE_ID_RE);
+          let fresh: "bright" | "bold" | "subtle" | null = null;
+          if (freshness && idMatch) {
+            const seen = freshness.get(idMatch[1]);
+            if (seen != null) {
+              const age = now - seen;
+              if (age < 30_000) fresh = "bright";
+              else if (age < 90_000) fresh = "bold";
+              else if (age < 180_000) fresh = "subtle";
+            }
+          }
+          return (
+            <Box key={i} width={width}>
+              <Text wrap="truncate" backgroundColor={fresh === "bright" ? "#2d4a1e" : fresh === "bold" ? "#1a2e14" : undefined}>
+                {` ${line}`}
+              </Text>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  }
+
+  // Parsed mode: custom rendering with chain highlighting
+  const GRAPH_RE = /^([│├─╯╭○◉◆◎┤┬┴┼~ ]*)(.*)/;
+  const CONTENT_RE = /^([a-z]{8})(\s+)(?:(\S+@)\s+)?(.*)$/;
+  const NODE_RE = /[○◉◆◎]/;
+  const chainArr = [...wsChain];
+  const isInChain = (l: string) => chainArr.length > 0 && chainArr.some((id) => l.includes(id));
+  const expanded: { line: string; hl: boolean }[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    expanded.push({ line: lines[i], hl: isInChain(lines[i]) });
+    const m = lines[i].match(GRAPH_RE);
+    if (m && NODE_RE.test(m[1]) && i + 1 < lines.length) {
+      const nextM = lines[i + 1].match(GRAPH_RE);
+      if (nextM && NODE_RE.test(nextM[1])) {
+        const connector = m[1].replace(/[○◉◆◎]/g, "│");
+        expanded.push({ line: connector, hl: isInChain(lines[i]) && isInChain(lines[i + 1]) });
+      }
+    }
+  }
+  const visible = expanded.slice(0, height - 1);
+
+  return (
+    <Box flexDirection="column" width={width}>
+      <Text bold dimColor>{` ${title}`}</Text>
+      {visible.map(({ line, hl }, i) => {
+        const m = line.match(GRAPH_RE);
+        const graph = m?.[1] ?? "";
+        const content = m?.[2] ?? "";
+        const cm = content.match(CONTENT_RE);
+        return (
+          <Box key={i} width={width}>
+            <Text wrap="truncate" bold={hl} inverse={hl}>
+              <Text color="gray">{` ${graph}`}</Text>
+              {cm ? (
+                <>
+                  <Text color="magenta">{cm[1]}</Text>
+                  {cm[2]}
+                  {cm[3] ? <><Text color="green">{cm[3]}</Text>{" "}</> : null}
+                  {cm[4]}
+                </>
+              ) : content}
+              {hl && !content.trim() ? " ".repeat(width) : null}
+            </Text>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+function DiffStatPanel({
+  lines,
+  width,
+  height,
+  focus,
+  selectedFile,
+  fileDiff,
+  diffScroll,
+  fileFilter,
+}: {
+  lines: DiffStatLine[] | null;
+  width: number;
+  height: number;
+  focus: "workspaces" | "files" | "diff";
+  selectedFile: number;
+  fileDiff: string[] | null;
+  diffScroll: number;
+  fileFilter: string;
+}) {
+  if (lines === null) {
+    return (
+      <Box flexDirection="column" width={width}>
+        <Text bold dimColor>{" Changed files"}</Text>
+        <Text>{" "}</Text>
+        <Text color="gray">{" ..."}</Text>
+      </Box>
+    );
+  }
+  if (lines.length === 0) {
+    return (
+      <Box flexDirection="column" width={width}>
+        <Text bold dimColor>{" Changed files"}</Text>
+        <Text>{" "}</Text>
+        <Text color="gray">{" no changes"}</Text>
+      </Box>
+    );
+  }
+
+  // Filter files by fuzzy match
+  const filtered = fileFilter
+    ? lines.filter((l) => fuzzyMatch(fileFilter, l.file))
+    : lines;
+
+  // File list: compact fixed height, max space for diff preview
+  const inCenter = focus !== "workspaces";
+  const hasFilter = fileFilter.length > 0;
+  const filterLineCount = hasFilter ? 1 : 0;
+  const maxListRows = inCenter ? 5 : Math.min(filtered.length, Math.max(3, Math.floor(height / 3)));
+  const listHeight = Math.min(filtered.length, maxListRows);
+  const overheadLines = 3 + (inCenter ? 1 : 0) + filterLineCount;
+  const diffHeight = Math.max(1, height - listHeight - overheadLines);
+
+  // Scroll the file list: keep selectedFile centered when possible
+  const halfList = Math.floor(listHeight / 2);
+  const clampedFile = Math.min(selectedFile, Math.max(0, filtered.length - 1));
+  const listStart = Math.max(0, Math.min(clampedFile - halfList, filtered.length - listHeight));
+  const visibleFiles = filtered.slice(listStart, listStart + listHeight);
+  const moreAbove = listStart > 0;
+  const moreBelow = listStart + listHeight < filtered.length;
+
+  const countWidth = 5;
+  const barWidth = Math.min(16, Math.max(4, Math.floor(width * 0.2)));
+  const fileWidth = Math.max(4, width - countWidth - barWidth - 4);
+
+  // Diff preview lines (scrollable)
+  const diffLines = fileDiff || [];
+  const clampedScroll = Math.min(diffScroll, Math.max(0, diffLines.length - 1));
+  const visibleDiff = diffLines.slice(clampedScroll, clampedScroll + diffHeight);
+  const moreDiffAbove = clampedScroll > 0;
+  const moreDiffBelow = clampedScroll + diffHeight < diffLines.length;
+
+  return (
+    <Box flexDirection="column" width={width}>
+      <Text bold dimColor>
+        {` Changed files (${hasFilter ? `${filtered.length}/${lines.length}` : `${lines.length}`})`}
+      </Text>
+      {hasFilter && (
+        <Box width={width}>
+          <Text>
+            <Text color="cyan">{" > "}</Text>
+            <Text>{fileFilter}</Text>
+            <Text color="gray">{"_"}</Text>
+          </Text>
+        </Box>
+      )}
+      {!hasFilter && <Text>{" "}</Text>}
+
+      {/* File list */}
+      {visibleFiles.map((line, i) => {
+        const actualIndex = listStart + i;
+        const isSelected = focus === "files" && actualIndex === clampedFile;
+        const dimList = focus !== "files";
+        const fileName = truncate(line.file, fileWidth);
+        const count = String(line.total).padStart(countWidth);
+        const plusLen = Math.max(0, Math.round(line.ratio * barWidth));
+        const minusLen = barWidth - plusLen;
+        return (
+          <Box key={actualIndex} width={width}>
+            <Text wrap="truncate" inverse={isSelected} dimColor={dimList}>
+              {` ${fileName.padEnd(fileWidth)} `}
+              <Text dimColor={dimList || !isSelected}>{count}</Text>
+              {" "}
+              <Text color={dimList ? undefined : "green"}>{"+".repeat(plusLen)}</Text>
+              <Text color={dimList ? undefined : "red"}>{"-".repeat(minusLen)}</Text>
+            </Text>
+          </Box>
+        );
+      })}
+      <Box width={width}>
+        <Text color="gray" wrap="truncate">
+          {moreAbove && moreBelow
+            ? ` ... ${lines.length - listHeight} more`
+            : moreBelow
+              ? ` ... ${lines.length - listStart - listHeight} more below`
+              : moreAbove
+                ? ` ... ${listStart} more above`
+                : " "}
+        </Text>
+      </Box>
+
+      {/* Diff preview */}
+      {inCenter && (
+        <>
+          <Text>{" "}</Text>
+          {fileDiff === null ? (
+            <Text color="gray">{" loading..."}</Text>
+          ) : fileDiff.length === 0 ? (
+            <Text color="gray">{" (empty diff)"}</Text>
+          ) : (
+            <>
+              {moreDiffAbove && (
+                <Box width={width}>
+                  <Text color="gray" wrap="truncate">{` ... ${clampedScroll} lines above`}</Text>
+                </Box>
+              )}
+              {visibleDiff.map((line, i) => (
+                <Box key={clampedScroll + i} width={width}>
+                  <Text wrap="truncate">{` ${line}`}</Text>
+                </Box>
+              ))}
+              {moreDiffBelow && (
+                <Box width={width}>
+                  <Text color="gray" wrap="truncate">{` ... ${diffLines.length - clampedScroll - diffHeight} lines below`}</Text>
+                </Box>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </Box>
+  );
+}
+
+// --- App ---
+
+type Mode = "browse" | "new" | "confirmDelete";
+
+function App({ repoRoot, vertical }: { repoRoot: string; vertical: boolean }) {
+  const { exit } = useApp();
+  const { stdout } = useStdout();
+  const [dims, setDims] = useState({ columns: stdout?.columns || 80, rows: stdout?.rows || 24 });
+
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [selected, setSelected] = useState(0);
+  const [mode, setMode] = useState<Mode>("browse");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [status, setStatus] = useState("");
+  const [statusColor, setStatusColor] = useState("yellow");
+  const [busy, setBusy] = useState(false);
+  const selectableWs = workspaces;
+  const [stats, setStats] = useState<Stats>({
+    claudeAgents: null,
+    prs: null,
+    reviewPrs: null,
+  });
+  const [jjGraph, setJjGraph] = useState<string[] | null>(null);
+  const [worldGraph, setWorldGraph] = useState<string[] | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const [diffStat, setDiffStat] = useState<DiffStatLine[] | null>(null);
+  const [diffStatKey, setDiffStatKey] = useState(0);
+  const [wsLoc, setWsLoc] = useState<{ added: number; removed: number } | null>(null);
+  const [focus, setFocus] = useState<"workspaces" | "files" | "diff">("workspaces");
+  const [selectedFile, setSelectedFile] = useState(0);
+  const [fileDiff, setFileDiff] = useState<string[] | null>(null);
+  const [diffScroll, setDiffScroll] = useState(0);
+  const [wsStatus, setWsStatus] = useState<Map<string, ClaudeStatus>>(new Map());
+  const [ideOpen, setIdeOpen] = useState<Set<string>>(new Set());
+  const [showHotkeys, setShowHotkeys] = useState(false);
+  const [fileFilter, setFileFilter] = useState("");
+  const [defaultBehind, setDefaultBehind] = useState<number | null>(null);
+  const [wsChain, setWsChain] = useState<Set<string>>(new Set());
+
+  const workspacesRef = useRef<Workspace[]>([]);
+  const focusNewTabRef = useRef(true);
+  const wsChainAbortRef = useRef(0);
+  const busyRef = useRef(false);
+  const isRefreshingRef = useRef(false);
+  const fetchInProgressRef = useRef(false);
+  const worldFreshnessRef = useRef<Map<string, number>>(new Map());
+  const worldInitializedRef = useRef(false);
+  const diffStatAbortRef = useRef(0);
+  const fileDiffAbortRef = useRef(0);
+
+  const refresh = useCallback(() => {
+    const oldWs = workspacesRef.current;
+    const ws = readCache(repoRoot);
+    setWorkspaces(ws);
+    workspacesRef.current = ws;
+    setSelected((prev) => {
+      const prevName = oldWs[prev]?.name;
+      if (prevName) {
+        const idx = ws.findIndex((w) => w.name === prevName);
+        if (idx >= 0) return idx;
+      }
+      return Math.min(prev, Math.max(0, ws.length - 1));
+    });
+  }, [repoRoot]);
+
+  const refreshGraphs = useCallback(async () => {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    try {
+      const [behind, graph, world] = await Promise.all([
+        fetchDefaultBehind(repoRoot),
+        fetchJJGraph(repoRoot, workspacesRef.current),
+        fetchWorldGraph(repoRoot),
+      ]);
+      setDefaultBehind(behind);
+      setJjGraph(graph);
+      const fm = worldFreshnessRef.current;
+      const now = Date.now();
+      const seen = new Set<string>();
+      for (const line of world) {
+        const plain = stripAnsi(line);
+        const m = plain.match(WORLD_CHANGE_ID_RE);
+        if (m) {
+          seen.add(m[1]);
+          if (!fm.has(m[1])) {
+            fm.set(m[1], worldInitializedRef.current ? now : 0);
+          }
+        }
+      }
+      for (const [id, ts] of fm) {
+        if (!seen.has(id)) fm.delete(id);
+        else if (ts > 0 && now - ts > 180_000) fm.set(id, 0);
+      }
+      worldInitializedRef.current = true;
+      setWorldGraph(world);
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  }, [repoRoot]);
+
+  const prRefreshInProgressRef = useRef(false);
+  const refreshPRs = useCallback(async () => {
+    if (prRefreshInProgressRef.current) return;
+    prRefreshInProgressRef.current = true;
+    try {
+      const [prs, reviewPrs] = await Promise.all([fetchPRs(), fetchReviewPRs()]);
+      setStats((prev) => ({ ...prev, prs, reviewPrs }));
+    } finally {
+      prRefreshInProgressRef.current = false;
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    refresh();
+    refreshGraphs();
+    refreshPRs();
+  }, [refresh, refreshGraphs, refreshPRs]);
+
+  // Fast poll for workspace claude status (5s, with overlap guard)
+  const fastPollInProgressRef = useRef(false);
+  useEffect(() => {
+    const poll = async () => {
+      if (fastPollInProgressRef.current) return;
+      fastPollInProgressRef.current = true;
+      try {
+        const info = await fetchWorkspaceStatuses(workspacesRef.current);
+        setWsStatus(info.statuses);
+        setStats((prev) => ({ ...prev, claudeAgents: info.agentCount }));
+      } finally {
+        fastPollInProgressRef.current = false;
+      }
+    };
+    const interval = setInterval(poll, 5_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Slow poll for IDE status (30s, with overlap guard)
+  const idePollInProgressRef = useRef(false);
+  useEffect(() => {
+    const poll = async () => {
+      if (idePollInProgressRef.current) return;
+      idePollInProgressRef.current = true;
+      try {
+        const ide = await fetchIDEStatuses(workspacesRef.current);
+        setIdeOpen(ide);
+      } finally {
+        idePollInProgressRef.current = false;
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Watch cache file for auto-refresh (debounced)
+  useEffect(() => {
+    const cacheFile = `${repoRoot}/.jj/ws-cache`;
+    if (!existsSync(cacheFile)) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const watcher = watch(cacheFile, () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => refresh(), 150);
+    });
+    return () => {
+      watcher.close();
+      if (timer) clearTimeout(timer);
+    };
+  }, [repoRoot, refresh]);
+
+  // Re-render on terminal resize
+  useEffect(() => {
+    const onResize = () => {
+      const cols = stdout?.columns || 80;
+      setDims({ columns: cols, rows: stdout?.rows || 24 });
+      if (!vertical && cols < 120 && focus !== "workspaces") setFocus("workspaces");
+    };
+    stdout?.on("resize", onResize);
+    return () => { stdout?.off("resize", onResize); };
+  }, [stdout, focus]);
+
+  // Fetch diff stat + LOC for selected workspace (debounced)
+  useEffect(() => {
+    const ws = selectableWs[selected];
+    setSelectedFile(0);
+    setFileFilter("");
+    setFileDiff(null);
+    setWsLoc(null);
+    if (!ws || ws.missing) {
+      setDiffStat([]);
+      setWsLoc({ added: 0, removed: 0 });
+      return;
+    }
+    setDiffStat(null);
+    const id = ++diffStatAbortRef.current;
+    const timer = setTimeout(async () => {
+      const result = await fetchDiffStatLines(ws.path);
+      if (diffStatAbortRef.current === id) {
+        setDiffStat(result.files);
+        setWsLoc(result.loc);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [selected, selectableWs, diffStatKey]);
+
+  // Fetch workspace chain for graph highlighting (debounced)
+  useEffect(() => {
+    const ws = selectableWs[selected];
+    if (!ws) { setWsChain(new Set()); return; }
+    const id = ++wsChainAbortRef.current;
+    const timer = setTimeout(async () => {
+      const chain = await fetchWorkspaceChain(repoRoot, ws.name);
+      if (wsChainAbortRef.current === id) setWsChain(chain);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [selected, selectableWs, repoRoot]);
+
+  // Fetch file diff when selected file changes (debounced)
+  useEffect(() => {
+    const ws = selectableWs[selected];
+    const filtered = fileFilter && diffStat
+      ? diffStat.filter((l) => fuzzyMatch(fileFilter, l.file))
+      : diffStat;
+    const file = filtered?.[selectedFile]?.file;
+    if (!ws || !file) {
+      setFileDiff(null);
+      return;
+    }
+    setFileDiff(null);
+    const id = ++fileDiffAbortRef.current;
+    const timer = setTimeout(async () => {
+      const lines = await fetchFileDiff(ws.path, file);
+      if (fileDiffAbortRef.current === id) {
+        setFileDiff(lines);
+        setDiffScroll(0);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [selectedFile, diffStat, selected, selectableWs, fileFilter]);
+
+  // Periodic graph refresh (10s)
+  useEffect(() => {
+    const interval = setInterval(refreshGraphs, 10_000);
+    return () => clearInterval(interval);
+  }, [refreshGraphs]);
+
+  // Periodic PR refresh (60s)
+  useEffect(() => {
+    const interval = setInterval(refreshPRs, 60_000);
+    return () => clearInterval(interval);
+  }, [refreshPRs]);
+
+  // Periodic jj git fetch (30s)
+  useEffect(() => {
+    const doFetch = async () => {
+      if (fetchInProgressRef.current || busyRef.current) return;
+      fetchInProgressRef.current = true;
+      setIsFetching(true);
+      try {
+        const result = await doGitFetch(repoRoot);
+        if (result.ok) {
+          setLastFetchTime(new Date());
+          refresh();
+          refreshGraphs();
+          setDiffStatKey((k) => k + 1);
+        } else if (result.error) {
+          showStatus(`fetch: ${result.error}`, "red");
+        }
+      } finally {
+        fetchInProgressRef.current = false;
+        setIsFetching(false);
+      }
+    };
+    doFetch();
+    const interval = setInterval(doFetch, 30_000);
+    return () => clearInterval(interval);
+  }, [repoRoot, refresh, refreshGraphs]);
+
+  // Clear status after 3s
+  useEffect(() => {
+    if (!status) return;
+    const timer = setTimeout(() => setStatus(""), 3000);
+    return () => clearTimeout(timer);
+  }, [status]);
+
+  const showStatus = (msg: string, color = "yellow") => {
+    setStatus(msg);
+    setStatusColor(color);
+  };
+
+  useInput(async (input, key) => {
+    // Hotkey overlay: dismiss on any key
+    if (showHotkeys) {
+      setShowHotkeys(false);
+      return;
+    }
+
+    if (busyRef.current) return;
+
+    // Show hotkey overlay
+    if (input === "?") {
+      setShowHotkeys(true);
+      return;
+    }
+
+    // --- New workspace input mode ---
+    if (mode === "new") {
+      if (key.escape) {
+        setMode("browse");
+        setInputValue("");
+        return;
+      }
+      if (key.return && inputValue.trim()) {
+        const name = inputValue.trim();
+        setMode("browse");
+        setInputValue("");
+        busyRef.current = true;
+        setBusy(true);
+        showStatus(`Creating workspace ${name}...`);
+        try {
+          const result = await $`jj-ws add ${name}`.nothrow().quiet();
+          const path = result.stdout.toString().trim();
+          if (result.exitCode !== 0 || !path) {
+            showStatus(`Failed to create workspace ${name}`, "red");
+          } else {
+            refresh();
+            const shouldFocus = focusNewTabRef.current;
+            showStatus(`Created ${name}, opening tab...`, "green");
+            await openOrFocusTab(name, path, shouldFocus);
+            showStatus(`Opened ${name}${shouldFocus ? "" : " (background)"}`, "green");
+            refreshGraphs(); refreshPRs();
+          }
+        } catch {
+          showStatus(`Error creating workspace ${name}`, "red");
+        }
+        busyRef.current = false;
+        setBusy(false);
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setInputValue((v) => v.slice(0, -1));
+        return;
+      }
+      if (input && !key.ctrl && !key.meta) {
+        setInputValue((v) => v + input);
+        return;
+      }
+      return;
+    }
+
+    // --- Confirm delete mode ---
+    if (mode === "confirmDelete") {
+      if (input === "y" || input === "Y" || key.return) {
+        const wsName = deleteTarget!;
+        setMode("browse");
+        setDeleteTarget(null);
+        busyRef.current = true;
+        setBusy(true);
+        showStatus(`Removing ${wsName}...`);
+        try {
+          await $`jj-ws rm ${wsName}`.nothrow().quiet();
+          await Promise.all([
+            $`kitten @ ${visorSocket()} close-tab --match title:${wsName}`.nothrow().quiet(),
+            closeIDEWindow(wsName),
+          ]);
+          refresh();
+          showStatus(`Removed ${wsName}`, "green");
+        } catch {
+          showStatus(`Error removing ${wsName}`, "red");
+        }
+        busyRef.current = false;
+        setBusy(false);
+        return;
+      }
+      setMode("browse");
+      setDeleteTarget(null);
+      return;
+    }
+
+    // --- Browse mode ---
+    const hasCenter = (vertical || dims.columns >= 120) && diffStat && diffStat.length > 0;
+    const hasDiff = hasCenter && fileDiff && fileDiff.length > 0;
+
+    // Diff scroll focus mode
+    if (focus === "diff") {
+      // Max scroll: stop when last line is visible at bottom
+      const fileListRows = Math.min(diffStat?.length || 0, 5);
+      const diffViewHeight = Math.max(1, dims.rows - 4 - fileListRows - 4);
+      const maxScroll = Math.max(0, (fileDiff?.length || 0) - diffViewHeight);
+
+      if ((key.tab && key.shift) || key.leftArrow || input === "h") {
+        setFocus("files");
+        return;
+      }
+      if (key.tab || key.rightArrow) {
+        return; // no-op at end of stack
+      }
+      if (key.escape) {
+        setFocus("files");
+        return;
+      }
+      if (input === "j" || key.downArrow) {
+        setDiffScroll((s) => Math.min(s + 1, maxScroll));
+        return;
+      }
+      if (input === "k" || key.upArrow) {
+        setDiffScroll((s) => Math.max(s - 1, 0));
+        return;
+      }
+      if (key.pageDown) {
+        setDiffScroll((s) => Math.min(s + diffViewHeight, maxScroll));
+        return;
+      }
+      if (key.pageUp) {
+        setDiffScroll((s) => Math.max(s - (dims.rows - 4), 0));
+        return;
+      }
+      return;
+    }
+
+    // Files focus mode
+    if (focus === "files") {
+      if ((key.tab && key.shift) || key.leftArrow) {
+        setFileFilter("");
+        setFocus("workspaces");
+        return;
+      }
+      if (key.return || key.tab || key.rightArrow) {
+        setFocus(hasDiff ? "diff" : "workspaces");
+        return;
+      }
+      if (key.escape) {
+        if (fileFilter) {
+          setFileFilter("");
+          setSelectedFile(0);
+        } else {
+          setFocus("workspaces");
+        }
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setFileFilter((f) => f.slice(0, -1));
+        setSelectedFile(0);
+        return;
+      }
+      if (key.downArrow) {
+        const max = fileFilter
+          ? (diffStat?.filter((l) => fuzzyMatch(fileFilter, l.file)).length || 1) - 1
+          : (diffStat?.length || 1) - 1;
+        setSelectedFile((s) => Math.min(s + 1, max));
+        return;
+      }
+      if (key.upArrow) {
+        setSelectedFile((s) => Math.max(s - 1, 0));
+        return;
+      }
+      if (key.pageDown) {
+        const max = fileFilter
+          ? (diffStat?.filter((l) => fuzzyMatch(fileFilter, l.file)).length || 1) - 1
+          : (diffStat?.length || 1) - 1;
+        setSelectedFile((s) => Math.min(s + 5, max));
+        return;
+      }
+      if (key.pageUp) {
+        setSelectedFile((s) => Math.max(s - 5, 0));
+        return;
+      }
+      // Typing adds to filter (printable chars, not ctrl/meta)
+      if (input && !key.ctrl && !key.meta) {
+        setFileFilter((f) => f + input.toLowerCase());
+        setSelectedFile(0);
+        return;
+      }
+      return;
+    }
+
+    // Workspaces focus mode
+    if (key.escape || input === "q") {
+      exit();
+      return;
+    }
+
+    if (input === "l" || key.tab || key.rightArrow) {
+      if (hasCenter) setFocus("files");
+      return;
+    }
+
+    if (input === "j" || key.downArrow) {
+      setSelected((s) => Math.min(s + 1, selectableWs.length - 1));
+      return;
+    }
+
+    if (input === "k" || key.upArrow) {
+      setSelected((s) => Math.max(s - 1, 0));
+      return;
+    }
+
+    if (input === "n" || input === "N") {
+      focusNewTabRef.current = input === "n";
+      setMode("new");
+      setInputValue("");
+      return;
+    }
+
+    if (input === "x") {
+      const ws = selectableWs[selected];
+      if (!ws) return;
+      busyRef.current = true;
+      setBusy(true);
+      showStatus(`Closing ${ws.name}...`);
+      await Promise.all([
+        $`kitten @ ${visorSocket()} close-tab --match title:${ws.name}`.nothrow().quiet(),
+        closeIDEWindow(ws.name),
+      ]);
+      busyRef.current = false;
+      setBusy(false);
+      showStatus(`Closed ${ws.name}`, "green");
+      return;
+    }
+
+    if (input === "d") {
+      const ws = selectableWs[selected];
+      if (!ws) {
+        showStatus("No workspace selected", "red");
+        return;
+      }
+      if (ws.isDefault) {
+        showStatus("Cannot delete default workspace", "red");
+        return;
+      }
+      setDeleteTarget(ws.name);
+      setMode("confirmDelete");
+      return;
+    }
+
+    if (input === "f" || input === "F") {
+      const forgeAll = input === "F";
+      const ws = selectableWs[selected];
+      if (!forgeAll && !ws) return;
+      if (!forgeAll && ws.missing) {
+        showStatus(`${ws.name} is missing`, "red");
+        return;
+      }
+      if (!(await ensureGpgUnlocked(repoRoot))) {
+        showStatus("GPG key locked - unlock cancelled", "red");
+        return;
+      }
+      const label = forgeAll ? "all" : ws.name;
+      const cwd = forgeAll ? repoRoot : ws.path;
+      const args = forgeAll ? ["jj-forge", "--all"] : ["jj-forge"];
+      busyRef.current = true;
+      setBusy(true);
+      showStatus(`Forging ${label}...`);
+      try {
+        const proc = Bun.spawn(args, {
+          cwd,
+          stdout: "pipe",
+          stderr: "ignore",
+        });
+        const reader = proc.stdout.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() || "";
+          for (const line of lines) {
+            const clean = stripAnsi(line).trim();
+            if (clean && clean !== "done") {
+              showStatus(`Forging ${label}: ${clean}`);
+            }
+          }
+        }
+        const exitCode = await proc.exited;
+        if (exitCode !== 0) {
+          showStatus(`Forge failed for ${label}`, "red");
+        } else {
+          showStatus(`Forged ${label}`, "green");
+          refresh();
+          refreshGraphs(); refreshPRs();
+          setDiffStatKey((k) => k + 1);
+        }
+      } catch {
+        showStatus(`Forge error for ${label}`, "red");
+      }
+      busyRef.current = false;
+      setBusy(false);
+      return;
+    }
+
+    if (input === "g") {
+      if (!(await ensureGpgUnlocked(repoRoot))) {
+        showStatus("GPG key locked - unlock cancelled", "red");
+        return;
+      }
+      busyRef.current = true;
+      setBusy(true);
+      showStatus("Forging default...");
+      try {
+        const proc = Bun.spawn(["jj-forge"], {
+          cwd: repoRoot,
+          stdout: "pipe",
+          stderr: "ignore",
+        });
+        const reader = proc.stdout.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() || "";
+          for (const line of lines) {
+            const clean = stripAnsi(line).trim();
+            if (clean && clean !== "done") {
+              showStatus(`Forging default: ${clean}`);
+            }
+          }
+        }
+        const exitCode = await proc.exited;
+        if (exitCode !== 0) {
+          showStatus("Forge failed for default", "red");
+        } else {
+          showStatus("Forged default", "green");
+          refresh();
+          refreshGraphs(); refreshPRs();
+          setDiffStatKey((k) => k + 1);
+        }
+      } catch {
+        showStatus("Forge error for default", "red");
+      }
+      busyRef.current = false;
+      setBusy(false);
+      return;
+    }
+
+    if (input === "r") {
+      refresh();
+      refreshGraphs(); refreshPRs();
+      setDiffStatKey((k) => k + 1);
+      showStatus("Refreshed", "green");
+      if (!fetchInProgressRef.current && !busyRef.current) {
+        fetchInProgressRef.current = true;
+        setIsFetching(true);
+        doGitFetch(repoRoot).then((result) => {
+          if (result.ok) {
+            setLastFetchTime(new Date());
+            refresh();
+            refreshGraphs(); refreshPRs();
+            setDiffStatKey((k) => k + 1);
+          } else if (result.error) {
+            showStatus(`fetch: ${result.error}`, "red");
+          }
+          fetchInProgressRef.current = false;
+          setIsFetching(false);
+        });
+      }
+      return;
+    }
+
+    if (input === "i") {
+      const ws = selectableWs[selected];
+      if (!ws) return;
+      if (ws.missing) {
+        showStatus(`${ws.name} is missing`, "red");
+        return;
+      }
+      showStatus(`Opening ${ws.name} in IDE...`);
+      await openInIDE(ws.path, repoRoot);
+      showStatus(`Opened ${ws.name} in IDE`, "green");
+      return;
+    }
+
+    if (input === "I") {
+      const ws = selectableWs[selected];
+      if (!ws) return;
+      if (!ideOpen.has(ws.name)) {
+        showStatus(`No IDE window for ${ws.name}`, "red");
+        return;
+      }
+      showStatus(`Focusing IDE for ${ws.name}...`);
+      await $`idea ${ws.path}`.nothrow().quiet();
+      showStatus(`Focused IDE for ${ws.name}`, "green");
+      return;
+    }
+
+    if (key.return || input === "o") {
+      const ws = selectableWs[selected];
+      if (!ws) return;
+      if (ws.missing) {
+        showStatus(`${ws.name} is missing`, "red");
+        return;
+      }
+      const shouldFocus = key.return;
+      busyRef.current = true;
+      setBusy(true);
+      showStatus(`Opening ${ws.name}...`);
+      const result = await openOrFocusTab(ws.name, ws.path, shouldFocus);
+      if (result === "focused") {
+        showStatus(`Switched to ${ws.name}`, "green");
+      } else if (result === "exists") {
+        showStatus(`${ws.name} already open`, "green");
+      } else {
+        showStatus(`Opened ${ws.name}${shouldFocus ? "" : " (background)"}`, "green");
+      }
+      busyRef.current = false;
+      setBusy(false);
+      refreshGraphs(); refreshPRs();
+      return;
+    }
+  });
+
+  const repoName = basename(repoRoot);
+  const showCenter = dims.columns >= 120;
+  const showGraph = dims.columns >= 150;
+  const rightWidth = Math.min(38, Math.floor(dims.columns * 0.3));
+  const graphWidth = showGraph ? Math.min(55, Math.max(35, Math.floor(dims.columns * 0.25))) : 0;
+  const leftWidth = showCenter
+    ? Math.min(30, Math.floor(dims.columns * 0.18))
+    : dims.columns - rightWidth - 2;
+  const centerWidth = showCenter ? dims.columns - leftWidth - rightWidth - graphWidth - (graphWidth > 0 ? 6 : 4) : 0;
+  const centerHeight = dims.rows - 4;
+
+  const footer = (
+    <>
+      {status ? (
+        <Box><Text color={statusColor as any}>{`  ${status}`}</Text></Box>
+      ) : (
+        <Box><Text>{" "}</Text></Box>
+      )}
+      <Box paddingBottom={1}>
+        {mode === "browse" && (
+          <Box>
+            <Box flexGrow={1}>
+              <Text color="gray">{"  ? hotkeys   esc quit"}</Text>
+            </Box>
+            <Text dimColor>
+              {isFetching ? " fetching..." : lastFetchTime ? ` fetched ${formatTimeAgo(lastFetchTime)}` : ""}
+              {"  "}
+            </Text>
+          </Box>
+        )}
+        {mode === "new" && (
+          <Text>
+            <Text color="blue">{"  Name: "}</Text>
+            <Text>{inputValue}</Text>
+            <Text color="gray">{"_"}</Text>
+            <Text color="gray">{"  (enter to create, esc to cancel)"}</Text>
+          </Text>
+        )}
+        {mode === "confirmDelete" && (
+          <Text color="red">{`  Delete ${deleteTarget}? (y/n) `}</Text>
+        )}
+      </Box>
+    </>
+  );
+
+  if (showHotkeys) {
+    const hotkeys = focus === "diff" ? HOTKEYS_DIFF : focus === "files" ? HOTKEYS_FILES : HOTKEYS_WORKSPACES;
+    return (
+      <Box width={dims.columns} height={dims.rows}>
+        <HotkeyOverlay hotkeys={hotkeys} columns={2} />
+      </Box>
+    );
+  }
+
+  if (vertical) {
+    const footerLines = 3;
+    const vAvail = dims.rows - footerLines - 1;
+    const vStatsRows = Math.min(10, Math.floor(vAvail * 0.15));
+    const vShowGraph = vAvail >= 50;
+    const vGraphRows = vShowGraph ? Math.min(10, Math.floor(vAvail * 0.12)) : 0;
+    const vWsRows = Math.min(selectableWs.length + 3, Math.max(4, Math.floor(vAvail * 0.15)));
+    const vShowWorld = vAvail >= 40;
+    const vSepLines = 1 + (vShowGraph ? 1 : 0) + 1 + (vShowWorld ? 1 : 0);
+    const vRemaining = Math.max(10, vAvail - vStatsRows - vGraphRows - vWsRows - vSepLines);
+    const vFilesRows = vShowWorld ? Math.max(5, Math.floor(vRemaining * 0.45)) : vRemaining;
+    const vWorldViewRows = vShowWorld ? Math.max(8, vRemaining - vFilesRows) : 0;
+    const fullW = dims.columns;
+
+    return (
+      <Box flexDirection="column" width={fullW} height={dims.rows}>
+        <Box flexDirection="column" flexGrow={1} paddingTop={1}>
+          <Box flexDirection="column" height={vStatsRows}>
+            <StatsPanel stats={stats} panelWidth={fullW} wsLoc={wsLoc} wsName={selectableWs[selected]?.name || ""} />
+          </Box>
+
+          {vShowGraph && (
+            <>
+              <Box width={fullW}><Text dimColor>{"─".repeat(Math.max(0, fullW - 2))}</Text></Box>
+              <Box flexDirection="column" height={vGraphRows}>
+                <JJGraphPanel lines={jjGraph} width={fullW} height={vGraphRows} wsChain={wsChain} title="Graph" />
+              </Box>
+            </>
+          )}
+
+          <Box width={fullW}><Text dimColor>{"─".repeat(Math.max(0, fullW - 2))}</Text></Box>
+
+          <Box flexDirection="column" height={vWsRows}>
+            <Text bold dimColor={focus !== "workspaces"}>
+              {` jj workspaces - ${repoName}`}
+              {defaultBehind !== null && defaultBehind > 0 && (
+                <Text color="yellow">{` ${defaultBehind} behind`}</Text>
+              )}
+            </Text>
+            <Text>{" "}</Text>
+            <WorkspaceList workspaces={selectableWs} selected={selected} width={fullW} compact={false} dimmed={focus !== "workspaces"} statuses={wsStatus} ideOpen={ideOpen} />
+          </Box>
+
+          <Box width={fullW}><Text dimColor>{"─".repeat(Math.max(0, fullW - 2))}</Text></Box>
+
+          <Box flexDirection="column" height={vFilesRows}>
+            <DiffStatPanel lines={diffStat} width={fullW} height={vFilesRows} focus={focus} selectedFile={selectedFile} fileDiff={fileDiff} diffScroll={diffScroll} fileFilter={fileFilter} />
+          </Box>
+
+          {vShowWorld && (
+            <>
+              <Box width={fullW}><Text dimColor>{"─".repeat(Math.max(0, fullW - 2))}</Text></Box>
+              <Box flexDirection="column" height={vWorldViewRows}>
+                <JJGraphPanel lines={worldGraph} width={fullW} height={vWorldViewRows} wsChain={wsChain} title="World" freshness={worldFreshnessRef.current} raw />
+              </Box>
+            </>
+          )}
+        </Box>
+
+        {footer}
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column" width={dims.columns} height={dims.rows}>
+      {/* Panels row */}
+      <Box flexDirection="row" flexGrow={1} paddingTop={1}>
+        {/* Left panel */}
+        <Box flexDirection="column" width={leftWidth}>
+          <Text bold wrap="truncate" dimColor={focus !== "workspaces"}>
+            {` jj workspaces - ${repoName}`}
+            {defaultBehind !== null && defaultBehind > 0 && (
+              <Text color="yellow">{` ${defaultBehind} behind`}</Text>
+            )}
+          </Text>
+          <Text>{" "}</Text>
+          <WorkspaceList workspaces={selectableWs} selected={selected} width={leftWidth} compact={showCenter} dimmed={focus !== "workspaces"} statuses={wsStatus} ideOpen={ideOpen} />
+        </Box>
+
+        <Separator />
+
+        {/* Center panel - files/diff (full height) */}
+        {showCenter && (
+          <>
+            <Box flexDirection="column" width={centerWidth}>
+              <DiffStatPanel lines={diffStat} width={centerWidth} height={centerHeight} focus={focus} selectedFile={selectedFile} fileDiff={fileDiff} diffScroll={diffScroll} fileFilter={fileFilter} />
+            </Box>
+            <Separator />
+          </>
+        )}
+
+        {/* Graph panel - own column, stable position */}
+        {showGraph && (
+          <>
+            <Box flexDirection="column" width={graphWidth}>
+              <JJGraphPanel lines={jjGraph} width={graphWidth} height={centerHeight} wsChain={wsChain} />
+            </Box>
+            <Separator />
+          </>
+        )}
+
+        {/* Right panel */}
+        <Box flexDirection="column" width={rightWidth}>
+          <StatsPanel stats={stats} panelWidth={rightWidth} wsLoc={wsLoc} wsName={selectableWs[selected]?.name || ""} />
+        </Box>
+      </Box>
+
+      {footer}
+    </Box>
+  );
+}
+
+// --- Main ---
+
+const jjDir = findJjDir(process.cwd());
+if (!jjDir) {
+  console.error("Not in a jj repository");
+  process.exit(1);
+}
+
+const repoRoot = resolveRepoRoot(jjDir);
+
+// Enter alternate screen
+process.stdout.write("\x1b[?1049h");
+process.stdout.write("\x1b[?25l");
+
+const cleanup = () => {
+  process.stdout.write("\x1b[?25h");
+  process.stdout.write("\x1b[?1049l");
+};
+
+process.on("exit", cleanup);
+process.on("SIGINT", () => {
+  cleanup();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  cleanup();
+  process.exit(0);
+});
+
+const verticalMode = process.argv.includes("--vertical") || process.argv.includes("-V");
+const app = render(<App repoRoot={repoRoot} vertical={verticalMode} />, { patchConsole: false });
+await app.waitUntilExit();
+cleanup();
+process.exit(0);

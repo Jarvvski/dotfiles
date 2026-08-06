@@ -1,0 +1,87 @@
+#!/usr/bin/env bun
+
+/**
+ * jj-nav: Navigate to the parent or child of the current change.
+ * If multiple matches exist, shows an interactive selection.
+ *
+ * Usage:
+ *   jj-nav parent    Navigate to parent(s)
+ *   jj-nav child     Navigate to child(ren)
+ */
+
+import { $ } from "bun";
+import React from "react";
+import { render, Text, Box } from "ink";
+import { Select } from "@inkjs/ui";
+
+interface Change {
+  changeId: string;
+  commitId: string;
+  description: string;
+  immutable: boolean;
+}
+
+type Direction = "parent" | "child";
+
+async function getRelatives(direction: Direction): Promise<Change[]> {
+  const revset = direction === "parent" ? "parents(@)" : "children(@)";
+  const template = `change_id.short() ++ "\t" ++ commit_id.short() ++ "\t" ++ if(immutable, "true", "false") ++ "\t" ++ description.first_line() ++ "\n"`;
+  const result = await $`jj log -r ${revset} --no-graph -T ${template}`.nothrow().quiet();
+  const output = result.stdout.toString().trim();
+  if (!output) return [];
+
+  return output.split("\n").filter(Boolean).map((line) => {
+    const [changeId, commitId, immutable, ...descParts] = line.split("\t");
+    return { changeId, commitId, immutable: immutable === "true", description: descParts.join("\t") };
+  });
+}
+
+async function editChange(changeId: string, immutable: boolean): Promise<void> {
+  if (immutable) {
+    await $`jj new ${changeId}`;
+  } else {
+    await $`jj edit ${changeId}`;
+  }
+}
+
+function SelectChange({ changes, direction }: { changes: Change[]; direction: Direction }) {
+  const options = changes.map((c) => ({
+    label: `${c.changeId} ${c.description || "(no description)"}`,
+    value: c.changeId,
+  }));
+
+  const label = direction === "parent" ? "parents" : "children";
+
+  return (
+    <Box flexDirection="column">
+      <Text color="gray">Multiple {label} found. Select one:</Text>
+      <Select
+        options={options}
+        onChange={async (value) => {
+          const change = changes.find((c) => c.changeId === value)!;
+          await editChange(value, change.immutable);
+          process.exit(0);
+        }}
+      />
+    </Box>
+  );
+}
+
+const direction = process.argv[2] as Direction;
+
+if (direction !== "parent" && direction !== "child") {
+  console.error("Usage: jj-nav <parent|child>");
+  process.exit(1);
+}
+
+const changes = await getRelatives(direction);
+
+if (changes.length === 0) {
+  const label = direction === "parent" ? "parents" : "children";
+  console.error(`No ${label} found for current change`);
+  process.exit(1);
+} else if (changes.length === 1) {
+  await editChange(changes[0].changeId, changes[0].immutable);
+} else {
+  render(<SelectChange changes={changes} direction={direction} />);
+}

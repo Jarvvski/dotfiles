@@ -1,0 +1,69 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "edit_predictions": {
+    "provider": "zed",
+    "open_ai_compatible_api": {
+      "max_output_tokens": 512,
+      "api_url": "https://api.openai.com/v1/chat/completions",
+      "model": "gpt-5.6-sol"
+    }
+  },
+  "ui_font_family": "JetBrainsMono Nerd Font",
+  "cli_default_open_behavior": "new_window",
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "right"
+  },
+  "collaboration_panel": {
+    "dock": "right"
+  },
+  "agent": {
+    "single_file_review": true,
+    "sidebar_side": "right",
+    "dock": "left",
+    "favorite_models": [],
+    "model_parameters": []
+  },
+  "git_panel": {
+    "dock": "right"
+  },
+  "agent_servers": {
+    "codex-acp": {
+      "type": "registry"
+    },
+    "claude-acp": {
+      "type": "registry"
+    }
+  },
+  "buffer_font_family": "JetBrainsMono Nerd Font Mono",
+  "icon_theme": "Material Icon Theme",
+  "ui_font_size": 16,
+  "buffer_font_size": 16.0,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "Tokyo Night Moon"
+  },
+  "languages": {
+    "Kotlin": {
+      "language_servers": ["kotlin-lsp", "!kotlin-language-server"]
+    }
+  },
+  "lsp": {
+    "kotlin-lsp": {
+      "binary": {
+        "path": "/opt/homebrew/bin/kotlin-lsp",
+        "arguments": ["--stdio"]
+      }
+    }
+  },
+}

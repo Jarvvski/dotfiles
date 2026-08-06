@@ -1,0 +1,28 @@
+# Warp Dark Theme for Ghostty
+# Matching WezTerm theme_warp_dark.lua
+
+background = 000000
+foreground = ffffff
+cursor-color = 00c2ff
+selection-background = 616161
+selection-foreground = ffffff
+
+# ANSI colors (0-7)
+palette = 0=#616161
+palette = 1=#ff5555
+palette = 2=#50fa7b
+palette = 3=#f1fa8c
+palette = 4=#66d9ef
+palette = 5=#ff79c6
+palette = 6=#8be9fd
+palette = 7=#f1f1f1
+
+# Bright colors (8-15)
+palette = 8=#8e8e8e
+palette = 9=#ff6e6e
+palette = 10=#69ff94
+palette = 11=#ffffa5
+palette = 12=#89ddff
+palette = 13=#ff92df
+palette = 14=#a4ffff
+palette = 15=#feffff

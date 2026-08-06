@@ -1,7 +1,0 @@
-"$schema" = "https://jj-vcs.github.io/jj/latest/config-schema.json"
-
-[revset-aliases]
-"trunk()" = "main@origin"
-
-[snapshot]
-max-new-file-size = "2MiB"

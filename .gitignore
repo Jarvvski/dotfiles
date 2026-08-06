@@ -1,0 +1,18 @@
+# Never import Aterm configuration
+private_dot_config/aterm/
+private_dot_config/private_aterm/
+
+# Generated and machine-local Jujutsu state
+private_dot_config/jj/repos/
+
+# Pi council runtime state
+private_dot_config/pi/extensions/council/private_state/
+
+# Machine-local Zsh preferences and generated completion state
+private_dot_config/zsh/dot_container-runtime
+private_dot_config/zsh/dot_zcompdump*
+
+# Backup files
+**/*.bak
+**/*.backup
+**/*.bak-*

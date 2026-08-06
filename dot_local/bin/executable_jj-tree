@@ -1,0 +1,424 @@
+#!/usr/bin/env bun
+
+/**
+ * jj-tree: Interactive change tree navigator for Jujutsu.
+ *
+ * Usage:
+ *   jj-tree              Navigate the change tree
+ *   jj-tree -r <revset>  Use custom revset
+ */
+
+import { $ } from "bun";
+import { statSync, mkdirSync, readFileSync, unlinkSync } from "fs";
+import { join, resolve } from "path";
+import React, { useState, useEffect } from "react";
+import { render, Text, Box, useInput, useApp, useStdout } from "ink";
+import stripAnsi from "strip-ansi";
+
+// --- Types ---
+
+interface Change {
+  changeId: string;
+  commitId: string;
+  immutable: boolean;
+  isWorkingCopy: boolean;
+}
+
+interface ChangeBlock {
+  change: Change;
+  lines: string[];
+}
+
+// --- Parsing ---
+
+// Change markers in jj graph output, followed by 2 spaces + word chars (the change ID)
+const HEADER_RE = /[○@◆×]  \w/;
+const ID_RE = /[○@◆×]  (\w+)/;
+
+function isChangeHeader(line: string): boolean {
+  return HEADER_RE.test(stripAnsi(line));
+}
+
+function extractChangeId(line: string): string | null {
+  const match = stripAnsi(line).match(ID_RE);
+  return match ? match[1] : null;
+}
+
+function parseBlocks(graphLines: string[], changes: Change[]): ChangeBlock[] {
+  const findChange = (prefix: string): Change | undefined =>
+    changes.find((c) => c.changeId.startsWith(prefix));
+
+  const blocks: ChangeBlock[] = [];
+  let current: { change: Change; lines: string[] } | null = null;
+
+  for (const line of graphLines) {
+    if (isChangeHeader(line)) {
+      if (current) {
+        trimTrailing(current.lines);
+        blocks.push(current);
+      }
+      const id = extractChangeId(line);
+      const change = id ? findChange(id) : undefined;
+      current = change ? { change, lines: [line] } : null;
+    } else if (current) {
+      if (stripAnsi(line).trim() === "~") continue;
+      current.lines.push(line);
+    }
+  }
+
+  if (current) {
+    trimTrailing(current.lines);
+    blocks.push(current);
+  }
+
+  return blocks;
+}
+
+function trimTrailing(lines: string[]): void {
+  while (lines.length > 0 && stripAnsi(lines[lines.length - 1]).trim() === "") lines.pop();
+}
+
+// Pad an ANSI-colored string to a visible width
+function padVisible(str: string, width: number): string {
+  const visible = stripAnsi(str).length;
+  if (visible >= width) return str;
+  return str + " ".repeat(width - visible);
+}
+
+// --- Data fetching & caching ---
+
+const DEFAULT_REVSET = "(mine() & trunk()::) | (mine() & mutable() & bookmarks()) | trunk()";
+
+interface CachedData {
+  changes: Change[];
+  graphLines: string[];
+}
+
+function findJjRoot(): string | null {
+  let dir = process.cwd();
+  while (true) {
+    try {
+      statSync(join(dir, ".jj"));
+      return dir;
+    } catch {}
+    const parent = resolve(dir, "..");
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+function getCachePath(repoRoot: string, revset: string): string {
+  const hash = new Bun.CryptoHasher("md5")
+    .update(repoRoot + "\0" + revset)
+    .digest("hex")
+    .slice(0, 12);
+  const cacheDir = join(
+    process.env.XDG_CACHE_HOME || join(process.env.HOME!, ".cache"),
+    "jj-tree"
+  );
+  mkdirSync(cacheDir, { recursive: true });
+  return join(cacheDir, `${hash}.json`);
+}
+
+function readCache(repoRoot: string, revset: string): CachedData | null {
+  try {
+    const cachePath = getCachePath(repoRoot, revset);
+    const cacheMtime = statSync(cachePath).mtimeMs;
+    const opMtime = statSync(join(repoRoot, ".jj", "repo", "op_heads")).mtimeMs;
+    if (cacheMtime > opMtime) {
+      return JSON.parse(readFileSync(cachePath, "utf8"));
+    }
+  } catch {}
+  return null;
+}
+
+function invalidateCache(repoRoot: string, revset: string): void {
+  try {
+    unlinkSync(getCachePath(repoRoot, revset));
+  } catch {}
+}
+
+function writeCache(repoRoot: string, revset: string, data: CachedData): void {
+  try {
+    Bun.write(getCachePath(repoRoot, revset), JSON.stringify(data));
+  } catch {}
+}
+
+async function fetchFresh(revset: string): Promise<CachedData> {
+  const tmpl =
+    'change_id.short() ++ "\\t" ++ commit_id.short() ++ "\\t" ++ if(immutable, "1", "0") ++ "\\t" ++ if(current_working_copy, "1", "0") ++ "\\n"';
+
+  const [structured, graph] = await Promise.all([
+    $`jj log --no-graph --color=never -r ${revset} -T ${tmpl}`.nothrow().quiet(),
+    $`jj log --color=always -r ${revset}`.nothrow().quiet(),
+  ]);
+
+  const changes = structured.stdout
+    .toString()
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line: string) => {
+      const [changeId, commitId, immutable, wc] = line.split("\t");
+      return { changeId, commitId, immutable: immutable === "1", isWorkingCopy: wc === "1" };
+    });
+
+  return { changes, graphLines: graph.stdout.toString().split("\n") };
+}
+
+async function fetchData(revset?: string): Promise<CachedData> {
+  const rev = revset || DEFAULT_REVSET;
+  const repoRoot = findJjRoot();
+
+  if (repoRoot) {
+    const cached = readCache(repoRoot, rev);
+    if (cached) return cached;
+
+    const data = await fetchFresh(rev);
+    writeCache(repoRoot, rev, data);
+    return data;
+  }
+
+  return fetchFresh(rev);
+}
+
+// --- Fuzzy matching ---
+
+function fuzzyMatch(text: string, query: string): boolean {
+  const lower = text.toLowerCase();
+  const q = query.toLowerCase();
+  let qi = 0;
+  for (let i = 0; i < lower.length && qi < q.length; i++) {
+    if (lower[i] === q[qi]) qi++;
+  }
+  return qi === q.length;
+}
+
+function blockText(block: ChangeBlock): string {
+  return block.lines.map((l) => stripAnsi(l)).join(" ");
+}
+
+// --- Components ---
+
+let selectedChange: Change | null = null;
+
+function App({ blocks }: { blocks: ChangeBlock[] }) {
+  const { exit } = useApp();
+  const { stdout } = useStdout();
+  const width = stdout.columns || 80;
+  const height = Math.max(1, (stdout.rows || 24) - 1);
+
+  const wcIdx = blocks.findIndex((b) => b.change.isWorkingCopy);
+  const initialIdx = wcIdx >= 0 ? wcIdx : 0;
+
+  const [sel, setSel] = useState(initialIdx);
+  const [scroll, setScroll] = useState(0);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // Filter blocks when searching
+  const filtered = query
+    ? blocks.filter((b) => fuzzyMatch(blockText(b), query))
+    : blocks;
+
+  const lines = filtered.flatMap((b, bi) => b.lines.map((l) => ({ text: l, bi })));
+
+  function blockRange(idx: number): [number, number] {
+    let s = 0;
+    for (let i = 0; i < idx; i++) s += filtered[i].lines.length;
+    return [s, s + filtered[idx].lines.length];
+  }
+
+  function ensureVisible(idx: number, scr: number): number {
+    if (filtered.length === 0) return 0;
+    const [start, end] = blockRange(idx);
+    if (start < scr) return start;
+    if (end > scr + height) return end - height;
+    return scr;
+  }
+
+  useEffect(() => {
+    setScroll((s) => ensureVisible(initialIdx, s));
+  }, []);
+
+  // Clamp selection when filter changes
+  useEffect(() => {
+    if (filtered.length === 0) return;
+    if (sel >= filtered.length) {
+      setSel(0);
+      setScroll(0);
+    }
+  }, [filtered.length]);
+
+  useInput((input, key) => {
+    // --- Search mode ---
+    if (searching) {
+      if (key.escape) {
+        setSearching(false);
+        setQuery("");
+        // Jump back to working copy
+        const wci = blocks.findIndex((b) => b.change.isWorkingCopy);
+        const idx = wci >= 0 ? wci : 0;
+        setSel(idx);
+        setScroll((s) => ensureVisible(idx, s));
+        return;
+      }
+      if (key.return) {
+        setSearching(false);
+        if (filtered.length === 0) return;
+        selectedChange = filtered[sel].change;
+        exit();
+        return;
+      }
+      if (key.backspace || key.delete) {
+        const next = query.slice(0, -1);
+        setQuery(next);
+        setSel(0);
+        setScroll(0);
+        return;
+      }
+      // Navigation within search results
+      if (input === "j" || key.downArrow) {
+        const next = Math.min(sel + 1, filtered.length - 1);
+        setSel(next);
+        setScroll((s) => ensureVisible(next, s));
+        return;
+      }
+      if (input === "k" || key.upArrow) {
+        const next = Math.max(sel - 1, 0);
+        setSel(next);
+        setScroll((s) => ensureVisible(next, s));
+        return;
+      }
+      // Append printable chars to query
+      if (input && !key.ctrl && !key.meta) {
+        const next = query + input;
+        setQuery(next);
+        setSel(0);
+        setScroll(0);
+      }
+      return;
+    }
+
+    // --- Normal mode ---
+    if (input === "q" || key.escape) {
+      exit();
+      return;
+    }
+    if (key.return) {
+      if (filtered.length === 0) return;
+      selectedChange = filtered[sel].change;
+      exit();
+      return;
+    }
+    if (input === "/") {
+      setSearching(true);
+      setQuery("");
+      return;
+    }
+
+    let next = sel;
+    if (input === "j" || key.downArrow) next = Math.min(sel + 1, filtered.length - 1);
+    else if (input === "k" || key.upArrow) next = Math.max(sel - 1, 0);
+    else if (input === "g") next = 0;
+    else if (input === "G") next = filtered.length - 1;
+    else if (input === "@") {
+      const wci = filtered.findIndex((b) => b.change.isWorkingCopy);
+      if (wci >= 0) next = wci;
+    }
+
+    if (next !== sel) {
+      setSel(next);
+      setScroll((s) => ensureVisible(next, s));
+    }
+  });
+
+  const visible = lines.slice(scroll, scroll + height);
+
+  return (
+    <Box flexDirection="column">
+      {visible.map(({ text, bi }, i) => (
+        <Text key={`${scroll}:${i}`} inverse={bi === sel}>
+          {padVisible(text, width)}
+        </Text>
+      ))}
+      {searching ? (
+        <Text>
+          <Text color="yellow">/</Text>
+          <Text>{query}</Text>
+          <Text color="gray">_</Text>
+          {filtered.length === 0 && query && <Text color="red"> (no matches)</Text>}
+        </Text>
+      ) : (
+        <Text dimColor>
+          {query
+            ? ` [/${query}] j/k:move  enter:go  /:search  esc:clear  q:quit`
+            : " j/k:move  enter:go  @:wc  g/G:top/bot  /:search  q:quit"}
+        </Text>
+      )}
+    </Box>
+  );
+}
+
+// --- Main ---
+
+const args = process.argv.slice(2);
+
+if (args.includes("-h") || args.includes("--help")) {
+  console.log(`jj-tree - Interactive change tree navigator
+
+Usage:
+  jj-tree              Navigate the change tree
+  jj-tree -r <revset>  Use custom revset
+
+Keys:
+  j/down    Move down        g     Jump to top
+  k/up      Move up          G     Jump to bottom
+  Enter     Go to change     @     Jump to working copy
+  /         Fuzzy search     Esc   Clear search
+  q/Esc     Quit`);
+  process.exit(0);
+}
+
+if (!process.stdin.isTTY) {
+  console.error("jj-tree requires an interactive terminal");
+  process.exit(1);
+}
+
+const rIdx = args.indexOf("-r");
+const revset = rIdx >= 0 ? args[rIdx + 1] : undefined;
+
+const { changes, graphLines } = await fetchData(revset);
+
+if (changes.length === 0) {
+  console.error("No changes found");
+  process.exit(1);
+}
+
+const blocks = parseBlocks(graphLines, changes);
+
+if (blocks.length === 0) {
+  console.error("Could not parse change tree");
+  process.exit(1);
+}
+
+// Enter alternate screen buffer
+process.stdout.write("\x1b[?1049h");
+
+const { waitUntilExit } = render(<App blocks={blocks} />);
+await waitUntilExit();
+
+// Leave alternate screen buffer
+process.stdout.write("\x1b[?1049l");
+
+if (selectedChange) {
+  // Invalidate cache since navigation changes the tree
+  const repoRoot = findJjRoot();
+  if (repoRoot) invalidateCache(repoRoot, revset || DEFAULT_REVSET);
+
+  if (selectedChange.immutable) {
+    await $`jj new ${selectedChange.changeId}`;
+  } else {
+    await $`jj edit ${selectedChange.changeId}`;
+  }
+}

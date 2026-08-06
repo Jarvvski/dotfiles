@@ -5,7 +5,7 @@
 *.zwc
 *.zsh.zwc
 .config/zsh/.zcomet/
-.config/zsh/.zcompdump_*
+.config/zsh/.zcompdump*
 .config/zsh/.zcompcache/
 .config/zsh/*.zwc
 .config/zsh/modules/*.zwc
@@ -41,6 +41,7 @@
 .gnupg/sshcontrol
 
 # Ignore these entirely
+.config/aterm/
 .config/ldcli/
 .config/software/
 .config/tmux/
@@ -60,6 +61,15 @@
 **/*.bak
 **/*.backup
 **/*.bak-*
+
+# Jujutsu repository-local/generated state
+.config/jj/repos/
+
+# Pi council runtime state
+.config/pi/extensions/council/private_state/
+
+# Machine-local Zsh preferences and generated completion state
+.config/zsh/.container-runtime
 
 # Pi credentials and machine-local/generated state
 .config/pi/auth.json

@@ -1,0 +1,76 @@
+# Ghostty Configuration
+# Mirroring WezTerm setup for jarvis
+
+# ===== FONTS =====
+font-family = JetBrainsMono Nerd Font Mono
+font-family-bold = JetBrainsMono Nerd Font Mono
+font-family-italic = JetBrainsMono Nerd Font Mono
+font-family-bold-italic = JetBrainsMono Nerd Font Mono
+font-size = 16
+
+# ===== THEME =====
+# Custom theme matching WezTerm theme_warp_dark.lua
+theme = warp-dark
+
+# ===== WINDOW =====
+window-padding-x = 25
+window-padding-y = 25
+split-divider-color = 616161
+window-decoration = auto
+macos-titlebar-style = transparent
+macos-titlebar-proxy-icon = hidden
+confirm-close-surface = false
+
+# ===== CURSOR =====
+cursor-style = bar
+cursor-style-blink = true
+cursor-color = 00c2ff
+
+# ===== SCROLLBACK =====
+scrollback-limit = 50000
+
+# ===== SHELL INTEGRATION =====
+shell-integration = detect
+shell-integration-features = cursor,sudo,no-title
+
+# ===== QUICK TERMINAL (deferred - uncomment when ready) =====
+# quick-terminal-position = top
+# quick-terminal-size = 40%
+# quick-terminal-animation-duration = 0.1
+# quick-terminal-autohide = true
+
+# ===== KEYBINDINGS =====
+
+# Splits (matching WezTerm)
+keybind = cmd+t=new_split:right
+keybind = cmd+shift+d=new_split:down
+
+# Pane Navigation
+keybind = cmd+left_bracket=goto_split:left
+keybind = cmd+right_bracket=goto_split:right
+keybind = cmd+up=goto_split:top
+keybind = cmd+down=goto_split:bottom
+
+# Close (with undo support - Cmd+Z to restore!)
+keybind = cmd+w=close_surface
+keybind = cmd+shift+w=close_tab
+
+# Tabs
+keybind = cmd+shift+t=new_tab
+keybind = cmd+shift+left_bracket=previous_tab
+keybind = cmd+shift+right_bracket=next_tab
+
+# Quick terminal toggle (deferred - uncomment when ready)
+# keybind = global:cmd+grave_accent=toggle_quick_terminal
+
+# Split management
+keybind = cmd+shift+equal=equalize_splits
+keybind = cmd+shift+z=toggle_split_zoom
+
+# macOS text navigation
+keybind = cmd+left=text:\x01
+keybind = cmd+right=text:\x05
+keybind = alt+left=text:\x1bb
+keybind = alt+right=text:\x1bf
+
+# Search (Cmd+F is built-in default)

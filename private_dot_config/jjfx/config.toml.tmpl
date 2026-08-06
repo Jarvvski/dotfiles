@@ -1,0 +1,19 @@
+[workspace]
+on_create = ["sh", "-c", "mise trust ./mist.toml && mise install && mise run app:setup"]
+
+[terminal]
+# Host workspace sessions in the visor kitty instead of the kitty jjfx runs in.
+# `listen_on` is the base `listen_on` value visor is launched with; jjfx resolves
+# kitty's live pid-suffixed socket (/tmp/kitty-visor-<pid>) from it at call time.
+listen_on = "unix:/tmp/kitty-visor"
+
+# Only used when the visor socket isn't found. Mirrors the Hammerspoon launch so
+# the started instance listens on the same socket with remote control enabled.
+launch_command = [
+  "{{ .chezmoi.homeDir }}/Applications/Visor.app/Contents/MacOS/kitty",
+  "--single-instance=no",
+  "--directory", "{{ .chezmoi.homeDir }}",
+  "-o", "allow_remote_control=yes",
+  "-o", "listen_on=unix:/tmp/kitty-visor",
+  "--detach",
+]
