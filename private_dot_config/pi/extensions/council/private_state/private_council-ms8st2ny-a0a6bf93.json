@@ -1,0 +1,533 @@
+{
+  "version": 1,
+  "runId": "council-ms8st2ny-a0a6bf93",
+  "createdAt": 1735689600000,
+  "question": "will andy burnham make a good prime minister of the UK?",
+  "memberCount": 5,
+  "status": "UNRESOLVED_CONFLICT",
+  "chairmanModel": "anthropic/claude-sonnet-5",
+  "researcherModel": "anthropic/claude-sonnet-5",
+  "members": [
+    {
+      "id": "C1",
+      "name": "Atlas",
+      "bias": "Systems coherence and long-term architecture",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "for": [
+        "P-C1",
+        "P-C2",
+        "P-C3",
+        "P-C5"
+      ],
+      "against": [
+        "P-C4"
+      ],
+      "proposalIds": [
+        "P-C1"
+      ],
+      "confidence": 0.58,
+      "dissent": "Objects to treating Bee Network and mayoral popularity as sufficient proof of national fitness, and equally rejects the line that Mid Staffs and GMP special measures disqualify him, since both were recovered and neither is adjudicated against him personally."
+    },
+    {
+      "id": "C2",
+      "name": "Forge",
+      "bias": "Pragmatic delivery, simplicity, and operational cost",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "for": [
+        "P-C1",
+        "P-C2",
+        "P-C3",
+        "P-C5"
+      ],
+      "against": [
+        "P-C4"
+      ],
+      "proposalIds": [
+        "P-C2"
+      ],
+      "confidence": 0.52,
+      "dissent": "Objects to treating communication skill and Bee-Network-as-national-model as evidence of national deliverability, while resisting overreach into unaffordable since no independent costing exists at all."
+    },
+    {
+      "id": "C3",
+      "name": "Cassandra",
+      "bias": "Adversarial risk, failure modes, and security",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "for": [
+        "P-C1",
+        "P-C2",
+        "P-C3"
+      ],
+      "against": [
+        "P-C4",
+        "P-C5"
+      ],
+      "proposalIds": [
+        "P-C3"
+      ],
+      "confidence": 0.58,
+      "dissent": "Maintains a recorded negative verdict against the conditional-positive majority: communication skill and regional legitimacy are entry conditions, not the job, and a conditional whose conditions are unmet at entry resolves to no."
+    },
+    {
+      "id": "C4",
+      "name": "Hearth",
+      "bias": "Human, developer, and product impact",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 2,
+      "for": [
+        "P-C1",
+        "P-C2",
+        "P-C3",
+        "P-C5"
+      ],
+      "against": [
+        "P-C4"
+      ],
+      "proposalIds": [
+        "P-C4"
+      ],
+      "confidence": 0.58,
+      "dissent": "Accepts the powers-gap limit as real but objects to the implied standard, since no candidate has a national delivery record. Voted against its own proposal after withdrawing its load-bearing clause. Seat replaced once after a researcher returned empty output on attempt 1."
+    },
+    {
+      "id": "C5",
+      "name": "Horizon",
+      "bias": "Innovation, optionality, and future leverage",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "for": [
+        "P-C1",
+        "P-C2"
+      ],
+      "against": [
+        "P-C3",
+        "P-C4",
+        "P-C5"
+      ],
+      "proposalIds": [
+        "P-C5"
+      ],
+      "confidence": 0.58,
+      "dissent": "Objects to treating the status quo as the low-risk default. Voted against its own proposal after conceding it had priced volatility as upside and that costing is an unmet precondition."
+    }
+  ],
+  "research": [
+    {
+      "memberId": "C1",
+      "researcherId": "C1-A",
+      "assignment": "Burnham's executive record - Treasury and Health 2007-2010 and the Greater Manchester mayoralty 2017 onward - judged for institutional capacity and multi-year follow-through",
+      "summary": "Whitehall tenures were short: Chief Secretary to the Treasury June 2007 to January 2008, Health Secretary June 2009 to May 2010, both too brief to evidence multi-year delivery. On Mid Staffordshire he commissioned the first independent inquiry in July 2009 but not the full statutory public inquiry; critics fault slowness given 2007-2009 Healthcare Commission warnings. The mayoralty is stronger evidence of long-horizon system building: Bee Network bus re-regulation, the first outside London in roughly forty years, phased September 2023 to full rollout January 2025, reportedly on schedule and within a 134.5m budget, with punctuality gains. The 2023 trailblazer devolution deal secured single-pot funding plus transport, skills and housing powers, with 2030 rail integration an ambition not a delivery. A Bed Every Night coincided with a 37 to 50 percent fall in rough sleeping, though COVID confounds attribution. As de facto police and crime commissioner he presided over GMP entering special measures in December 2020 and exiting in October 2022 - a genuine institutional failure followed by documented recovery.",
+      "sources": [
+        "https://www.gov.uk/government/people/andy-burnham",
+        "https://www.greatermanchester-ca.gov.uk/news/bee-network-bus-franchising-complete/",
+        "https://www.gov.uk/government/news/greater-manchester-and-west-midlands-trailblazer-devolution-deals",
+        "https://en.wikipedia.org/wiki/Stafford_Hospital_scandal"
+      ]
+    },
+    {
+      "memberId": "C1",
+      "researcherId": "C1-B",
+      "assignment": "Constitutional route from metro-mayor to PM, Labour leadership rules, and structural fit of the mayoral operating model to the premiership",
+      "summary": "There is no legal requirement that a PM be an MP, only that they command Commons confidence, but convention demands rapid entry to the Commons, normally via a safe-seat by-election. Labour's rules require nominations from 20 percent of Labour MPs to challenge a sitting leader, and in a vacancy the same threshold plus nominations from at least three affiliates including two unions. The NEC controls the timetable, making the party apparatus a significant gatekeeper. Structurally the roles differ sharply: the premiership involves collective Cabinet government, binding Treasury fiscal constraints, a vast civil service, national-security and international obligations, and disciplining a large parliamentary party. A combined authority has no primary legislative power, no meaningful tax base beyond precepts, and narrow policy levers - a system where a mayor can be a coherent single point of will. Commentary casts Burnham as genuinely delivery-experienced and regionally authentic, while critics stress the non-MP problem and the leap from regional success to national and parliamentary management.",
+      "sources": [
+        "https://commonslibrary.parliament.uk/research-briefings/cbp-10840/",
+        "https://commonslibrary.parliament.uk/research-briefings/SN03938",
+        "https://labour.org.uk/resources/labour-party-rulebook/",
+        "https://www.theguardian.com/politics/ng-interactive/2025/sep/20/andy-burnham-the-man-who-would-be-king"
+      ]
+    },
+    {
+      "memberId": "C2",
+      "researcherId": "C2-A",
+      "assignment": "Burnham's concrete delivery scorecard as Greater Manchester Mayor - shipped versus announced, with budgets, timelines, overruns and audit findings",
+      "summary": "Bee Network bus franchising is the strongest hard-delivery evidence: full Greater Manchester franchising completed 5 January 2025 after phased rollout from September 2023. A 2 pound adult single with hopper transfer is in place, funded by national fare-cap money plus GMCA subsidy, with GMCA committing only to hold it as long as we can - no multi-year funding guarantee found. Contactless bus and tram capping launched 23 March 2025. Ridership up around 8 percent in longest-franchised areas; January 2025 punctuality 71.9 percent, but no pre-franchising baseline was retrievable. Tram and heavy rail integration remains aspirational, framed beyond 2028. A Bed Every Night launched autumn 2018 with 30m plus invested and 10,000 plus supported; rough sleeper counts fell from 268 in 2017 to 90 in 2021 but critics attribute much to the COVID Everyone In programme, and counts have risen since. The pledge to end rough sleeping by 2020 was not met. Places for Everyone was adopted March 2024 with a large gap between the Manchester requirement of 3,533 homes a year and the 2,430 figure. The charging Clean Air Zone was abandoned.",
+      "sources": [
+        "https://tfgm.com/tickets-and-passes/transition-advice",
+        "https://www.manchester.gov.uk/taxis-and-private-hire/clean-air-update-report-july-2025/clean-air-zone-information",
+        "https://www.greatermanchester-ca.gov.uk/what-we-do/planning-and-housing/strategic-planning/places-for-everyone",
+        "https://www.bbc.co.uk/news/articles/c39e0zjz3j0o"
+      ]
+    },
+    {
+      "memberId": "C2",
+      "researcherId": "C2-B",
+      "assignment": "Scale and cost gap between running Greater Manchester and running the UK, plus costed credibility of Burnham's national platform",
+      "summary": "The fiscal scale gap is the headline finding. GMCA's 2025/26 general revenue budget is 246.6m with a 598.3m capital programme, roughly 845m total. UK Treasury current expenditure is around 871.6bn for 2025/26, with Total Managed Expenditure projected around 1,416bn. GMCA's general budget is therefore roughly 0.02 to 0.03 percent of central government spending - a fiscal scale difference of roughly 3,500 to 5,700 times. Devolved powers cover transport, strategic planning and housing, skills, economic development and health partnership influence, but include no fiscal or legislative sovereignty, no defence, no foreign policy, no gilt market exposure and no Bank of England relationship. On platform, Burnham backs greater public ownership and a Great British Railways-style model and wants Bee Network franchising extended nationally. He calls for scrapping the two-child benefit limit, with a press-cited estimate of around 3.5bn a year, and is open to a wealth tax with an adviser-sourced figure of around 10bn a year - both unverified. Critically, no single integrated formally costed platform was located, and no independent costing of his combined agenda was found.",
+      "sources": [
+        "https://www.gov.uk/government/statistics/public-spending-statistics-release-july-2026/",
+        "https://www.theguardian.com/politics/2025/sep/25/andy-burnham-calls-two-child-benefit-limit-the-worst-of-westminster",
+        "https://www.theguardian.com/politics/2025/sep/29/andy-burnham-fights-back-against-labour-critics-over-challenge-to-starmer"
+      ]
+    },
+    {
+      "memberId": "C3",
+      "researcherId": "C3-A",
+      "assignment": "The case against Burnham - Mid Staffs and NHS record, twice-failed leadership bids, GMP special measures under his policing remit",
+      "summary": "Burnham was Health Secretary 2009-2010 at the tail end of the Mid Staffordshire scandal rather than its causal period. Critics fault him for initially resisting a full public inquiry, commissioning only a second independent inquiry in July 2009 that campaigners called inadequate. Materially, Cameron's 2013 Commons statement on the Francis Report did not blame the previous Health Secretary personally, attributing failure to the trust board; Burnham apologised. One whistleblower called him grossly unsuitable. On campaigning capability he lost decisively twice: 2010 with 10.41 percent, eliminated early with support concentrated in the North West, and 2015 with 19.0 percent, a distant second to Corbyn despite front-runner status. On operational oversight, GMP was placed in special measures in December 2020 after HMICFRS found roughly 80,100 crimes per year unrecorded, about one in five crimes, during Burnham's mayoral policing remit which absorbed the police and crime commissioner role in 2017. Chief Constable Ian Hopkins resigned days later. The subsequent GMP recovery is a genuine mitigating counter-fact but the failure occurred on his watch. No expenses or personal-ethics controversy surfaced.",
+      "sources": [
+        "https://www.gov.uk/government/speeches/francis-report-pm-statement-on-mid-staffs-public-inquiry",
+        "https://en.wikipedia.org/wiki/2015_Labour_Party_leadership_election_(UK)",
+        "https://www.theguardian.com/uk-news/2020/dec/10/greater-manchester-police-let-80100-crimes-go-unrecorded-in-year"
+      ]
+    },
+    {
+      "memberId": "C3",
+      "researcherId": "C3-B",
+      "assignment": "Premiership risk - no Commons seat, engineered route to power, thin security and foreign record, Tier 3 crisis-management verdict",
+      "summary": "Route-to-power risk is the dominant finding. Labour rules require a leadership challenger to be an MP with 20 percent parliamentary backing, and Burnham holds no seat, so any elevation requires an engineered by-election followed by a contest. Constitutionally there is no bar, and Full Fact has debunked claims he cannot legally be PM, but the sequencing is inherently destabilising: a manufactured vacancy, a divisive contest, and a leader installed by party mechanics rather than a general election. Given his repeated public criticism of the sitting leadership, Cabinet cohesion risk is real though empirically untested, and he would inherit a parliamentary party substantially selected under a rival. His security and foreign policy record is thin: no ministerial defence, foreign or home security brief. Signals suggest NATO and defence-spending continuity, acceptance that EU membership will not be reopened, and a hardening on immigration. On crisis management the October 2020 Tier 3 standoff is double-edged: he lost the substantive fight, with government imposing Tier 3 unilaterally and offering 60m against a 75m ask, while gaining large national profile.",
+      "sources": [
+        "https://commonslibrary.parliament.uk/research-briefings/sn03938/",
+        "https://fullfact.org/politics/andy-burnham-cannot-legally-be-pm-incorrect-claim/",
+        "https://www.theguardian.com/politics/2020/oct/20/greater-manchester-tier-3-lockdown-andy-burnham"
+      ]
+    },
+    {
+      "memberId": "C4",
+      "researcherId": "C4-A",
+      "assignment": "Public standing, trust and communication - polling versus Starmer, Labour member support, mayoral margins, authenticity reputation and grandstanding counter-evidence",
+      "summary": "PARTIAL SUCCESS with explicit degradation - only one of three searches returned usable results, so polling items are lower-confidence and were not freshly verified. High-confidence and directly sourced: Greater Manchester mayoral results show a durable and unusually broad local mandate. 2017: 63 percent with 359,352 votes against 128,752 for the Conservative candidate, turnout 28.9 percent. 2021: 67.3 percent with 473,024 votes, turnout 34.7 percent. 2024: 63.4 percent with 420,749 votes against 10.4 percent Conservative and 7.6 percent independent, turnout 32.05 percent, with Reform UK taking 49,532 - so his share slipped about 4 points against a fragmenting field. Turnout stayed in the low thirties throughout, so the mandate is wide but shallow in participation terms. Lower-confidence and NOT verified: that Burnham consistently outpolls Starmer on best Labour leader among both members and the general public. His authenticity reputation is anchored in the October 2020 Tier 3 funding standoff. Counter-evidence, also unverified: critics read him as a serial self-promoter who positions against the sitting leader without the electoral risk of re-entering Parliament.",
+      "sources": [
+        "https://en.wikipedia.org/wiki/2024_Greater_Manchester_mayoral_election",
+        "https://www.gmelects.org.uk/elections/previous-greater-manchester-combined-authority-mayoral-election-results/",
+        "https://en.wikipedia.org/wiki/2021_Greater_Manchester_mayoral_election",
+        "https://www.bbc.com/news/uk-england-manchester-39822225"
+      ]
+    },
+    {
+      "memberId": "C4",
+      "researcherId": "C4-B",
+      "assignment": "Lived-impact record - A Bed Every Night, Bee Network and the 2 pound fare, MBacc, health record, Hillsborough Law, and where outcomes lagged rhetoric",
+      "summary": "A Bed Every Night, launched November 2018, is credited in an independent Heriot-Watt and I-SPHERE evaluation with contributing to a 57 percent fall in recorded rough sleeping since 2017, from a peak of 268 down to 149 in 2023, though the count ticked back up to 154 in autumn 2024. Capacity grew from around 550 to over 600 bed spaces. The honest caveat is that it is temporary-accommodation-led, funding-fragile, and does not touch housing supply and benefit drivers upstream. Bee Network bus franchising completed 5 January 2025, the first English city-region to re-regulate buses since 1986. Greater Manchester held a local 2 pound single fare through 2025 while the national cap rose to 3 pounds. Punctuality improved from roughly 66 percent pre-franchising to 75.8 percent in March 2025, up from 71.6 percent a year earlier, with patronage up 14 percent year on year in the first franchised areas. Early-phase problems included app failures and driver shortages, and the subsidy burden is significant. On Hillsborough he has campaigned for years for a statutory duty of candour, with the Public Office Accountability Bill introduced 16 September 2025, and he later attacked an amendment carving out intelligence and security services. The pattern is consistent: strong measurable delivery where he holds devolved power, advocacy-only influence on national legislation, welfare and social care.",
+      "sources": [
+        "https://www.greatermanchester-ca.gov.uk/what-we-do/housing/a-bed-every-night/",
+        "https://tfgm.com/reports/bus-performance",
+        "https://commonslibrary.parliament.uk/research-briefings/"
+      ]
+    },
+    {
+      "memberId": "C5",
+      "researcherId": "C5-A",
+      "assignment": "Burnham as a reform and realignment bet - delivered devolution record versus advocated national constitutional and economic reform",
+      "summary": "Burnham has an unusually concrete delivery record for a would-be PM, but it is city-region scale. Delivered in Greater Manchester: the Bee Network with bus franchising and tram integration returned to public control, the Good Landlord Charter covering over 100 landlords and around 234,000 homes or roughly half the city-region's rented stock, A Bed Every Night, and health and social-care devolution building on the 2009 pilot status. MBacc, the Greater Manchester Baccalaureate technical-education pathway, is launched with sector gateways but framed as a 2030 vision, so rollout is partial. At national level his positions are advocacy, not record: completing English devolution across the regions, reform of the second chamber toward a regionally constituted body, openness to some sort of wealth tax plus land and council tax reform, and a sustained push for a national care service funded without loading working people's taxes - his clearest and most consistent theme. Evidence for proportional representation support is secondary-source only, and no direct evidence was found for a written-constitution position. Strategic implication: his distinctive leverage is proof-of-concept credibility on delivered devolution and public control of infrastructure, plus a structural-reform agenda the current leadership has not nationally committed to.",
+      "sources": [
+        "https://www.greatermanchester-ca.gov.uk/who-we-are/devolution/",
+        "https://www.greatermanchester-ca.gov.uk/what-we-do/education-work-and-skills/technical-education-city-region/the-greater-manchester-baccalaureate-mbacc/",
+        "https://www.greatermanchester-ca.gov.uk/what-we-do/planning-and-housing/housing/good-landlord-charter/",
+        "https://www.theguardian.com/politics/2025/may/31/labour-spending-review-economic-reset-louise-haigh-andy-burnham"
+      ]
+    },
+    {
+      "memberId": "C5",
+      "researcherId": "C5-B",
+      "assignment": "Counterfactual and opportunity cost - alternative Labour leaders, comparative polling, eligibility obstacles, and the thin evidence base on criticisms",
+      "summary": "As of mid-2025 the realistic successor field was Angela Rayner and Wes Streeting as heavyweights, with Shabana Mahmood a credible second-tier contender and Bridget Phillipson diminished. Rayner's position was damaged by an unpaid-tax controversy and her resignation as deputy leader in September 2025, after which bookmakers made Streeting favourite. Burnham consistently outperforms Starmer on leadership metrics: Ipsos found 35 percent thought Burnham would do a good job as Labour leader against 26 percent for Starmer, and YouGov in September 2025 found Burnham notably more popular at 31 percent favourable, comparable to Farage's raw favourable score though Farage carried far higher unfavourables. Starmer's own ratings were historically weak by autumn 2025, with Ipsos recording 13 percent satisfied and 79 percent dissatisfied for a net of minus 66, and Reform leading Labour by 12 points. The decisive practical constraint is structural: Labour leadership rules require parliamentary membership plus 20 percent of parliamentary nominations, so Burnham would need to win a Commons by-election first, and vacating the mayoralty triggers a second by-election. Important gaps: the favourability numbers are single-wave snapshots with no longitudinal or head-to-head general-election modelling against Farage, and the search did not surface substantive coverage of the incoherence or Old Labour nostalgia criticisms.",
+      "sources": [
+        "https://www.ipsos.com/en-uk/public-most-likely-think-andy-burnham-would-do-good-job-labour-leader-more-starmer-rayner-and",
+        "https://yougov.com/en-gb/articles/53085-would-andy-burnham-be-a-better-prime-minister-than-keir-starmer",
+        "https://www.ipsos.com/en-uk/reform-uk-leads-12-pts-over-labour-both-pm-and-chancellor-hit-historic-low-satisfaction-ratings",
+        "https://www.theguardian.com/politics/ng-interactive/2025/sep/20/andy-burnham-the-man-who-would-be-king"
+      ]
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-C1",
+      "authorId": "C1",
+      "text": "Burnham would likely be an above-average British PM on the axis that matters most to long-horizon system coherence - sequencing multi-year structural reform against incumbent interests - and he is the only current Labour figure with a franchising-scale reform delivered end to end. But that competence is architecture-specific: it was built in a single-executive combined authority with no fiscal or legislative constraint of consequence, and the premiership's binding constraints are precisely the ones he has never operated under. Net: a good PM conditionally, and a poor one if he arrives without a parliamentary base and a Treasury-literate coalition."
+    },
+    {
+      "id": "P-C2",
+      "authorId": "C2",
+      "text": "Burnham would be an above-average British prime minister on execution discipline and public communication, but a below-average one on fiscal control, because his single genuine delivery success is a narrow, subsidy-dependent, regionally-scoped programme and he has no costed national programme at all. Net verdict: probably adequate, not good, unless he acquires a Treasury-grade costing function before taking office."
+    },
+    {
+      "id": "P-C3",
+      "authorId": "C3",
+      "text": "Burnham would probably not make a good Prime Minister, because his documented strengths - communication, regional advocacy, political positioning - are precisely the skills a PM needs least urgently, while his three demonstrated weak points map directly onto the three functions that break premierships: institutional oversight, party management, and hard security under adversarial pressure. The failure modes are concrete and evidenced, not hypothetical."
+    },
+    {
+      "id": "P-C4",
+      "authorId": "C4",
+      "text": "Burnham would likely be a good Prime Minister on the dimensions of public trust, empathy, communication, and measurable improvement in ordinary people's daily lives, because he has a rare demonstrated record of shipping services people actually feel. The real doubt is not whether he cares or connects, but whether a delivery style built on one city-region with direct control over a handful of services survives contact with a national machine where he would mostly be arbitrating, not delivering."
+    },
+    {
+      "id": "P-C5",
+      "authorId": "C5",
+      "text": "Burnham would likely make a good Prime Minister specifically because he is the only realistic contender whose governing instinct is structural - completing English devolution, reforming the second chamber, and fixing social care funding - and who has actually delivered public-control reforms at city-region scale. He is not the low-variance choice; he is the choice that reopens options the current Labour leadership has closed, and on an optionality test that is the better bet."
+    }
+  ],
+  "readiness": [
+    {
+      "memberId": "C1",
+      "attempt": 1,
+      "supports": [
+        "P-C1",
+        "P-C2",
+        "P-C3"
+      ],
+      "opposes": [
+        "P-C4"
+      ],
+      "conflicts": [],
+      "statement": "I sponsor P-C1: a conditional yes whose condition is the inherited system, not the man. P-C2 and P-C3 are acceptable because both locate the risk in structure rather than sentiment. Conflicts declared; ready to vote. Issued 4 challenges, to C5, C4, C3 and C2.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C2",
+      "attempt": 1,
+      "supports": [
+        "P-C1",
+        "P-C2"
+      ],
+      "opposes": [
+        "P-C5"
+      ],
+      "conflicts": [],
+      "statement": "I sponsor P-C2: a demonstrated operator on one narrow, well-resourced brief, with no independently costed national platform and an unproven fiscal control record at 3,500 to 5,700x scale - probably adequate, not good. P-C1 is also acceptable. Ready to vote. Issued 6 challenges, to C4 twice, C5 twice, C1 and C3.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C3",
+      "attempt": 1,
+      "supports": [
+        "P-C1",
+        "P-C2",
+        "P-C3"
+      ],
+      "opposes": [
+        "P-C4",
+        "P-C5"
+      ],
+      "conflicts": [],
+      "statement": "I sponsor P-C3 without amendment. I accept P-C2 and P-C1 as compatible negative-to-conditional readings; I treat P-C4 and P-C5 as in direct verdict conflict with mine. Ready to vote. Issued 4 challenges, to C4, C5, C1 and C2.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C4",
+      "attempt": 2,
+      "supports": [
+        "P-C1",
+        "P-C4",
+        "P-C5"
+      ],
+      "opposes": [],
+      "conflicts": [],
+      "statement": "I sponsor P-C4; my doubt is the powers gap, not the man. I am candid that the 2025 favourability polling in my record is unverified and I do not lean on it. Ready to vote. Issued 5 challenges, to C3 twice, C2, C1 and C5. Seat attempt 2 after a researcher failure on attempt 1.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C5",
+      "attempt": 1,
+      "supports": [
+        "P-C1",
+        "P-C4",
+        "P-C5"
+      ],
+      "opposes": [
+        "P-C3"
+      ],
+      "conflicts": [],
+      "statement": "I sponsor P-C5 without amendment. I accept P-C4 and P-C1 as compatible conditional yeses that price the same constraint without the optionality term. Ready to vote. Issued 5 challenges, to C3 twice, C2, C1 and C4.",
+      "readyToVote": true
+    }
+  ],
+  "votes": [
+    {
+      "memberId": "C1",
+      "attempt": 1,
+      "proposalId": "P-C1",
+      "vote": "YES",
+      "rationale": "Even after withdrawing Bee Network delivery as evidence of Treasury-side fiscal control, the core finding stands: demonstrated competence is architecture-specific to a single-executive combined authority with no fiscal or legislative constraint. The conditional verdict is the only one that survives the concession round intact."
+    },
+    {
+      "memberId": "C1",
+      "attempt": 1,
+      "proposalId": "P-C2",
+      "vote": "YES",
+      "rationale": "Defensible on the scale-mismatch mechanism, and its concession that continuity is not the free option makes 'probably adequate' a comparative improvement rather than an incoherent hedge. A proposal need not be my favourite to be a valid answer."
+    },
+    {
+      "memberId": "C1",
+      "attempt": 1,
+      "proposalId": "P-C3",
+      "vote": "YES",
+      "rationale": "The narrowed mechanism - that the mayor's own assurance layer did not surface a two-year recording collapse and that whips, not markets, are the failure surface - is a genuine systems-coherence finding about missing feedback loops, and it converges with my Commons-base condition from the failure-mode side."
+    },
+    {
+      "memberId": "C1",
+      "attempt": 1,
+      "proposalId": "P-C4",
+      "vote": "NO",
+      "rationale": "Once Hearth withdrew 'the risk is scale, not character' as load-bearing and conceded that moving nothing he only advocated is a competence finding, the proposal's own title claim is gone and its remaining base is exactly the architecture-specific evidence that does not transfer."
+    },
+    {
+      "memberId": "C1",
+      "attempt": 1,
+      "proposalId": "P-C5",
+      "vote": "YES",
+      "rationale": "The counterfactual argument is legitimate and the comparator's tail is non-zero and already being realised. I hold my objection that the office grants formal levers but not the coalition to use them, but this remains a defensible answer, not a category error."
+    },
+    {
+      "memberId": "C2",
+      "attempt": 1,
+      "proposalId": "P-C1",
+      "vote": "YES",
+      "rationale": "Atlas withdrew the Bee Network envelope as fiscal-control evidence, which is the concession my own case rested on, and what remains is a conditional answer keyed to the actual binding constraint. Conditioning competence on operating environment is the correct delivery framing."
+    },
+    {
+      "memberId": "C2",
+      "attempt": 1,
+      "proposalId": "P-C2",
+      "vote": "YES",
+      "rationale": "My own verdict survives scrutiny in narrowed form: one clear win on a ~845m brief, no independently costed national platform, and a 3,500-5,700x scale jump. I concede the denominator point, but 'probably adequate, not good' remains the honest read."
+    },
+    {
+      "memberId": "C2",
+      "attempt": 1,
+      "proposalId": "P-C3",
+      "vote": "YES",
+      "rationale": "Cassandra dropped the market-panic framing and the stale leadership shares but retained a real operational finding: the mayor's own assurance layer did not detect a two-year recording collapse, HMICFRS did. Detection-versus-remediation is a legitimate delivery critique."
+    },
+    {
+      "memberId": "C2",
+      "attempt": 1,
+      "proposalId": "P-C4",
+      "vote": "YES",
+      "rationale": "Hearth withdrew the character/scale framing and the mandate and polling props, leaving the narrow auditable claim I already conceded: on the levers he held, outcomes moved and were independently evaluated by Heriot-Watt/I-SPHERE. That audit posture is a genuine fiscal-control virtue."
+    },
+    {
+      "memberId": "C2",
+      "attempt": 1,
+      "proposalId": "P-C5",
+      "vote": "NO",
+      "rationale": "Horizon conceded it priced volatility as upside, dropped the 35/26 pillar, and reclassified the national care service as exposure - which strips out most of the option value while the unfunded liability stays. 'Highest-option-value bet' with no costed platform is exactly the operational cost risk I cannot vote for."
+    },
+    {
+      "memberId": "C3",
+      "attempt": 1,
+      "proposalId": "P-C1",
+      "vote": "YES",
+      "rationale": "Atlas prices the same failure surface I do, and a conditional verdict that goes negative without a Commons base and Treasury-literate coalition. Having withdrawn the ring-fenced Bee envelope as fiscal evidence, its remaining case is honest about what is unproven."
+    },
+    {
+      "memberId": "C3",
+      "attempt": 1,
+      "proposalId": "P-C2",
+      "vote": "YES",
+      "rationale": "'Probably adequate, not good' is a sub-good verdict compatible with mine, and the 845m versus 1,416bn scale gap plus the absence of an independently costed national platform is a real risk finding, not a vibe."
+    },
+    {
+      "memberId": "C3",
+      "attempt": 1,
+      "proposalId": "P-C3",
+      "vote": "YES",
+      "rationale": "Even narrowed, the load-bearing mechanism survives: the mayor's own assurance layer did not detect a two-year recording collapse, HMICFRS did, and C4 conceded no instance of him catching it first. Add no defence, foreign or home brief and entry into a PLP he did not select: high variance, low floor."
+    },
+    {
+      "memberId": "C3",
+      "attempt": 1,
+      "proposalId": "P-C4",
+      "vote": "NO",
+      "rationale": "After withdrawing 'the risk is scale, not character' as load-bearing, the proposal's own title claim no longer stands, leaving independently evaluated outcomes on levers he held - which is my premise, not a route to 'good PM'."
+    },
+    {
+      "memberId": "C3",
+      "attempt": 1,
+      "proposalId": "P-C5",
+      "vote": "NO",
+      "rationale": "Horizon conceded it priced volatility as upside and reclassified the national care service as exposure, which strips the option-value frame of its asymmetry while leaving the downside intact. A bad counterfactual raises the value of a high floor, not of a high-variance bet."
+    },
+    {
+      "memberId": "C4",
+      "attempt": 2,
+      "proposalId": "P-C1",
+      "vote": "YES",
+      "rationale": "After conceding that 'moved nothing he only advocated' is a competence finding rather than a scale caveat, C1's conditional formulation is the closest match to my own retained position. It preserves the lived-improvement record while pricing the constraint honestly."
+    },
+    {
+      "memberId": "C4",
+      "attempt": 2,
+      "proposalId": "P-C2",
+      "vote": "NO",
+      "rationale": "Forge is right that willingness to be audited is not a financed plan, but its verdict prices only fiscal magnitude and discounts independently evaluated citizen outcomes. Having itself conceded that continuity is not the free option, 'adequate, not good' is a scale-of-brief argument dressed as a verdict."
+    },
+    {
+      "memberId": "C4",
+      "attempt": 2,
+      "proposalId": "P-C3",
+      "vote": "NO",
+      "rationale": "I accept I cannot cite an instance of him catching a failure first. But with the Oct 2022 special-measures exit conceded and the market-panic implication withdrawn, the 'low floor' claim rests on inexperience rather than demonstrated failure, and it never engages the twelve-year Hillsborough record."
+    },
+    {
+      "memberId": "C4",
+      "attempt": 2,
+      "proposalId": "P-C4",
+      "vote": "NO",
+      "rationale": "I withdrew 'the risk is scale, not character' as load-bearing, which was the load-bearing clause of my own title; as drafted the proposal treats the powers gap as a caveat when I have conceded it is a competence finding. Voting YES on my own text after that concession would be dishonest - the surviving part of my case is carried better by P-C1."
+    },
+    {
+      "memberId": "C4",
+      "attempt": 2,
+      "proposalId": "P-C5",
+      "vote": "YES",
+      "rationale": "Horizon's concessions leave a narrower but defensible core: a demonstrated instinct for public-control reform that citizens experienced directly, judged against a real rather than idealised alternative. Comparative legitimacy is the right frame for a question about public trust."
+    },
+    {
+      "memberId": "C5",
+      "attempt": 1,
+      "proposalId": "P-C1",
+      "vote": "YES",
+      "rationale": "After my concessions, P-C1's conditional formulation is the closest match to my surviving position: structural-reform capacity is real but contingent on a Commons base and Treasury-literate coalition."
+    },
+    {
+      "memberId": "C5",
+      "attempt": 1,
+      "proposalId": "P-C2",
+      "vote": "YES",
+      "rationale": "Forge conceded the blank denominator and that against 13% satisfaction and net -66 'probably adequate' reads as comparative improvement, which removes my main objection. The fiscal-scale gap is the same unmet costing precondition I accepted."
+    },
+    {
+      "memberId": "C5",
+      "attempt": 1,
+      "proposalId": "P-C3",
+      "vote": "NO",
+      "rationale": "I accepted that I mispriced volatility as upside, but Cassandra withdrew the market-panic implication and the 2010/2015 shares, leaving oversight and whip-management risk that argues for conditions, not for a negative verdict. It still prices the comparator tail at zero when that tail is already being realised."
+    },
+    {
+      "memberId": "C5",
+      "attempt": 1,
+      "proposalId": "P-C4",
+      "vote": "NO",
+      "rationale": "Hearth withdrew 'the risk is scale, not character' as load-bearing and conceded that moving nothing he only advocated is a competence finding, which hollows out the proposal's own thesis. Delivered felt improvement inside controlled powers cannot by itself carry a national YES."
+    },
+    {
+      "memberId": "C5",
+      "attempt": 1,
+      "proposalId": "P-C5",
+      "vote": "YES",
+      "rationale": "I vote YES on the narrowed core I defended: demonstrated public-control structural reform at city-region scale plus a comparator whose downside is already materialising. I hold this despite withdrawing the 35/26 polling pillar and conceding costing as an unmet precondition."
+    }
+  ],
+  "acceptedProposalIds": [
+    "P-C1",
+    "P-C2",
+    "P-C3",
+    "P-C5"
+  ],
+  "conflicts": [
+    [
+      "P-C3",
+      "P-C5"
+    ],
+    [
+      "P-C1",
+      "P-C3"
+    ]
+  ],
+  "reconciliationRounds": 1,
+  "report": "COUNCIL RECORD - run council-ms8st2ny-a0a6bf93 (salvaged)\nQuestion: will andy burnham make a good prime minister of the UK?\n\nThe chairman ended before publishing, so this record was assembled by the council extension from the phase checkpoints it had already written. No prose report was authored by the chairman.\n\nSeats: C1 Atlas (openai/gpt-5.6-luna, attempt 1); C2 Forge (openai/gpt-5.6-luna, attempt 1); C3 Cassandra (openai/gpt-5.6-luna, attempt 1); C4 Hearth (openai/gpt-5.6-luna, attempt 2); C5 Horizon (openai/gpt-5.6-luna, attempt 1)\nResearch records: 10. Proposals: 5. Readiness records: 5. Votes: 25. Reconciliation rounds: 1.\n\nMACHINE-COMPUTED RESULT\nP-C1: 5 YES, 0 NO - accepted.\nP-C2: 4 YES, 1 NO - accepted.\nP-C3: 3 YES, 2 NO - accepted.\nP-C4: 1 YES, 4 NO - rejected.\nP-C5: 3 YES, 2 NO - accepted.\nStatus: UNRESOLVED_CONFLICT. Accepted: P-C1, P-C2, P-C3, P-C5.",
+  "salvaged": true
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "memberCount": 5,
+  "maxReplacementsPerSeat": 2,
+  "maxReconciliationRounds": 1,
+  "researcherTimeoutMs": 180000,
+  "memberTimeoutMs": 420000,
+  "participantTimeoutMs": 240000,
+  "chairmanTimeoutMs": 3600000,
+  "maxResearchQueries": 3,
+  "maxResearchSources": 5,
+  "allowedModelPatterns": [
+    "anthropic/claude-opus-5",
+    "anthropic/claude-opus-4-8",
+    "anthropic/claude-sonnet-5",
+    "openai/gpt-5.6-*"
+  ]
+}

@@ -1,0 +1,679 @@
+{
+  "version": 1,
+  "runId": "council-ms8w4jhy-228e5013",
+  "createdAt": "2026-01-01T00:00:00Z",
+  "question": "will the AI bubble pop in 2026?",
+  "memberCount": 5,
+  "chairmanModel": "chairman-procedural",
+  "researcherModel": "anthropic/claude-sonnet-5",
+  "members": [
+    {
+      "id": "C1",
+      "name": "Atlas",
+      "bias": "Systems coherence and long-term architecture",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 2,
+      "status": "active",
+      "proposalIds": [
+        "P-C1-1"
+      ],
+      "confidence": 0.62,
+      "dissent": "Would concede to C3 Cassandra that circular vendor financing plus 35-40% index concentration can convert a local credit event into a systemic one faster than base rates suggest, collapsing the 2027-2028 modal break into 2026. Expects to disagree with C5 Horizon if optionality arguments treat falling inference costs as pure upside; those same curves strand installed hardware. Timing, not direction, is weakest.",
+      "note": "Attempt 1 failed with protocol_output_limit during its researcher fanout; seat replaced once. Attempt 2 research was degraded: live search providers failed, most figures model-prior and unverified."
+    },
+    {
+      "id": "C2",
+      "name": "Forge",
+      "bias": "Pragmatic delivery, simplicity, and operational cost",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "proposalIds": [
+        "P-C2-1"
+      ],
+      "confidence": 0.66,
+      "dissent": "Concedes the depreciation and credit-repricing channel could cascade faster than modelled; if it hits equities hard, C3 Cassandra's contagion case wins. Concedes Gartner/IDC figures were search-synthesized, not directly verified. Expects to disagree with seats treating negative app-layer margins as proof of systemic collapse, and with any seat calling a pop on sentiment rather than a falsifiable threshold. Timing, not direction, is weakest."
+    },
+    {
+      "id": "C3",
+      "name": "Cassandra",
+      "bias": "Adversarial risk, failure modes, and security",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "proposalIds": [
+        "P-C3-1"
+      ],
+      "confidence": 0.62,
+      "dissent": "Concedes the definition does the work: on a loose 'pop' (any 20%+ AI drawdown) 2026 becomes a coin-flip. Expects to disagree with C5 Horizon on treating capex as optionality rather than sunk fixed cost with a hard depreciation clock, and with C2 Forge if operational-cost framing understates GPU residual-value and single-customer concentration risk. Would concede to C1 that the honest answer is a probability, not a yes/no.",
+      "note": "Research record 2 degraded: web search providers failed, sources are unverified retrieval targets."
+    },
+    {
+      "id": "C4",
+      "name": "Hearth",
+      "bias": "Human, developer, and product impact",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "proposalIds": [
+        "P-C4-1"
+      ],
+      "confidence": 0.62,
+      "dissent": "Concedes timing is the weak link: thresholds could be met in 2027 instead, and has no consumer retention or churn primary data. Expects to disagree with C3 Cassandra if she treats a credit event as systemic contagion, and with C5 Horizon if optionality dismisses the drawdown. Against C2 Forge, insists junior-hiring damage is adoption-driven and survives any repricing."
+    },
+    {
+      "id": "C5",
+      "name": "Horizon",
+      "bias": "Innovation, optionality, and future leverage",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "proposalIds": [
+        "P-C5-1"
+      ],
+      "confidence": 0.66,
+      "dissent": "Concedes evidence is mostly supply-side; no audited lab ARR or token-volume data, so revenue-per-capex is unverified. If C3 Cassandra shows circular vendor financing or SPV leverage is materially larger than disclosed, the threshold could be met faster. Expects to disagree with C2 Forge on unit economics and C3 on timing; concedes the 40%/capex-cut definition is deliberately strict."
+    }
+  ],
+  "research": [
+    {
+      "memberId": "C1",
+      "question": "Structural/capital-formation coherence: hyperscaler capex vs operating cash flow, SPV/vendor/circular financing, GPU depreciation, index concentration, physical constraints",
+      "summary": "DEGRADED: live search providers failed, findings are model-prior and unverified. Aggregate capital formation still internally fundable but leveraged at the margin: Big-4 capex has climbed from roughly half to near or above 100% of operating cash flow, compressing free cash flow. Fragile nodes are Oracle and neoclouds like CoreWeave, funding capacity with debt and leases against highly concentrated counterparty revenue (OpenAI). JV/SPV and private-credit datacenter structures plus vendor and equity-linked circularity (Nvidia investing into customers, OpenAI-Oracle-Nvidia cross-commitments) inflate apparent demand and obscure duration risk. Server useful lives extended to 5-6 years flatter EPS; reversal would be a sharp earnings hit. AI-linked names are roughly 35-40% of S&P 500 cap, so any re-rating transmits system-wide. Physical constraints bound deployment: multi-year grid interconnect queues, 2-4 year transformer and 4-7 year turbine lead times, HBM/CoWoS allocation limits. These constraints both slow overbuild and risk stranding capex that cannot be energized. Net read: 2026 stress most likely presents as a credit/financing event at leveraged neoclouds and lab-adjacent debt, not hyperscaler insolvency.",
+      "sources": [
+        "Search/fetch tooling unavailable - no URLs retrievable this run (Exa 429, no Perplexity/Gemini keys, Reuters 401) - 2026-01"
+      ]
+    },
+    {
+      "memberId": "C1",
+      "question": "Can the revenue architecture carry the capital structure? Run-rates vs contracted compute, inference cost curves, historical overbuild base rates and what 'pop' meant",
+      "summary": "PARTIALLY DEGRADED: only one source fetchable; other figures are late-2025 public disclosures, unverified this run. Revenue is roughly an order of magnitude below committed compute: OpenAI about $20B annualized exiting 2025 and Anthropic about $7-9B, against OpenAI-disclosed compute commitments near $1.4T over about eight years (~$175B/yr average). Hyperscaler AI revenue is profitable and backlog-backed, so stress concentrates in model labs and debt-financed neoclouds rather than the full stack. Inference cost per token falls steeply, perhaps 10x/year at fixed capability, improving unit margins but devaluing installed hardware and inviting price competition; 5-6 year depreciation schedules are the key accounting fragility. Base rates: overbuild cycles run about 4-7 years from acceleration to break (fiber 1996-2001, railway mania 1844-1847). 'Pop' historically meant ~75-78% Nasdaq drawdown into Oct 2002, telecom capex collapsing over 50% within 2-3 years, bond recoveries near 20%, and headline bankruptcies - yet the fiber was eventually fully utilized. Implication: equity/credit repricing is plausible; physical compute demand persists. 2026 timing hinges on funding access, not end demand.",
+      "sources": [
+        "Dot-com bubble (Nasdaq -78%, ~$500B debt-financed telecom buildout, ~20% bond recovery) - https://en.wikipedia.org/wiki/Dot-com_bubble - fetched 2026-06",
+        "OpenAI ~$1.4T compute commitments vs ~$20B run-rate (Altman public statements) - unverified this run - 2025-11",
+        "Anthropic ~$7-9B run-rate reporting - unverified this run - 2025-12",
+        "Inference cost-per-token ~10x/yr decline (a16z/Epoch analyses) - unverified this run - 2025",
+        "Railway mania peak-to-break ~1844-1847 - general historical record - n/a"
+      ]
+    },
+    {
+      "memberId": "C2",
+      "question": "What are the real unit economics of AI compute and AI-native products (inference price trends, GPU rental and depreciation, gross margins, commoditization, capex/debt financing) as of late 2025 / early 2026?",
+      "summary": "GPU rental prices are normalizing, not collapsing: SemiAnalysis's H100 index shows on-demand ~$2.99/hr in 2024 stepping to ~$2.10-2.70/hr on 1-year contracts, with some contracts renewed at prior rates into 2028. Hyperscalers extended server useful lives (Microsoft 4->6yr, Oracle 5->6yr, Amazon 5-6yr, Meta 5.5yr), suppressing near-term depreciation; Burry's contested claim is ~$176B of understated depreciation 2026-2028. The sharpest datum is application-layer margin: Anthropic ~40% company gross margin (COGS ~60%), Cursor reportedly ~-23% GM for the quarter ending Jan 2026 (~-31% including free-user inference), with sector-wide negative GMs at inference-heavy coding startups. Financing stress is real: Oracle raised ~$43B debt plus $5B equity for OCI AI capacity; CoreWeave funds GPUs with asset-level delayed-draw term loans, recognizing depreciation before revenue stabilizes. Evidence on per-token price trends and open-weight commoditization was thin and should not be asserted. Net: fragility sits in negative-margin apps and debt-financed neoclouds, transmitting via depreciation revision and credit repricing rather than inference price deflation.",
+      "sources": [
+        "SemiAnalysis - H100 1-Year Rental Price Index / GPU Cloud ClusterMAX - https://gpu-index.semianalysis.com/ - 2024-2026 (live index)",
+        "Amazon FY2025 Form 10-K (server useful lives 5-6 yrs) - https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm - filed 2026",
+        "RBC GAM MacroMemo (Burry $176B depreciation-understatement claim) - https://www.rbcgam.com/en/ca/article/macromemo-april-14-may-4-2026/detail - 2026-04-14",
+        "The Information - 'Anthropic Lowers Gross Margin Projection' (2025) and 'The Nuances of Cursor's Gross Margin' (2026) - https://www.theinformation.com/articles/16444 - 2025/2026 (paywalled, read via search synthesis)",
+        "Oracle Q4/FY2026 earnings release - https://www.oracle.com/news/announcement/q4fy26-earnings-release-2026-06-10/ - 2026-06-10; CoreWeave 10-Q - https://www.sec.gov/Archives/edgar/data/1769628/000176962826000222/crwv-20260331.htm - 2026-03-31"
+      ]
+    },
+    {
+      "memberId": "C2",
+      "question": "What is actual enterprise AI spend behaviour and budget durability going into 2026 (budget surveys, pilot-to-production conversion, retention/churn, discretionary vs committed spend, pullback signals)?",
+      "summary": "Demand-side evidence does not support imminent budget collapse. Gartner forecasts worldwide AI spending of ~$2.5-2.6T in 2026, +44-47% YoY, and raised rather than cut its 2026 IT forecast; its CFO survey shows ~28% of CFOs expecting double-digit IT budget growth. IDC's narrower 'IT spending on AI' measure is $409B in 2026, +53% YoY - different definition, same direction. Two independent houses converging is the strongest signal available. ROI scrutiny is rising in parallel: IDC expects ~50% of AI-driven digital use cases to miss ROI targets in 2026, and the widely-cited MIT/NANDA '95% of pilots fail' figure is contested - it measured no measurable P&L impact inside a short study window, not outright failure. Retention is diverging rather than collapsing: Snowflake NRR 125% (Jul 2025), MongoDB net ARR expansion 120% (Oct 2025), while Paddle reports elevated broad B2B SaaS churn from stack re-evaluation. That pattern is reallocation within software budgets, not withdrawal from AI. No hard public data found on discretionary vs committed multi-year AI contract mix - a genuine gap.",
+      "sources": [
+        "Gartner - 'Gartner Forecasts Worldwide AI Spending to Grow 47% in 2026' - https://www.gartner.com/en/newsroom/press-releases/2026-05-19-gartner-forecasts-worldwide-ai-spending-to-grow-47-percent-in-2026 - 2026-05-19",
+        "Gartner - 'Worldwide AI Spending Will Total $2.5 Trillion in 2026' plus CFO budget plans release - https://www.gartner.com/en/newsroom/press-releases/ - 2026-01-15 / 2026-02-10",
+        "IDC - 'AI Is Ready, Enterprises Are Not' (~50% of AI use cases to miss ROI targets) - https://www.idc.com/resource-center/blog/ai-is-ready-enterprises-are-not-vendors-need-to-fix-it/ - 2025/2026 (exact date unverified)",
+        "NewMR - 'Myth Number 2: MIT Showed That 95% of AI Pilots Fail' - https://newmr.org/blog/myth-number-2-mit-showed-that-95-of-ai-pilots-fail/ - 2025 (original via Fortune 2025-08-18)",
+        "Snowflake Q2 FY26 investor results (NRR 125%, period ended 2025-07-31); MongoDB 10-Q (120% net ARR expansion) filed 2025-12-02; Paddle SaaS Market Report Q1/Q2 2025"
+      ]
+    },
+    {
+      "memberId": "C3",
+      "question": "What are the concrete financial fragility and contagion channels in the AI buildout as of late 2025/2026, and what would a forced-deleveraging chain actually look like?",
+      "summary": "Official-sector sources converge on 'high valuation, low leverage'. BIS (Dec 2025) puts the Magnificent 7 at ~35% of S&P 500 market cap (from ~20% in Nov 2022), with other tech ~15%, so roughly half the index is AI-sentiment-linked; M7 P/Es are top-decile, but the rally is backed by realised earnings, unlike 1999. BIS flags the first credit-channel signal: recent large-tech data-centre bond issuance was received unfavourably, spreads ticked wider, leveraged-loan spreads +10bp (cov-lite +15bp) post First Brands/Tricolor, private-credit dealmaking cooled - all short-lived, with IG/HY spreads still historically tight. The Fed's Nov 2025 FSR ranks AI a top-5 cited shock (30% of contacts vs 9% in spring), names private-credit opacity and bank credit commitments to SPEs/CLOs/ABS and BDCs (~$2.7tn to other financial entities) as the plausible bank-adjacent transmission path. Plausible chain: capex guidance cut -> equity drawdown -> SPV/neocloud refi window shuts -> GPU residual values and 5-6yr useful-life assumptions marked down -> ABS/private-credit junior tranches and BDC NAVs stressed -> bank lines drawn. Disconfirming: capex is predominantly cash-flow funded, business debt/GDP is at 20-year lows, banks hold record capital, and Oct 2025 credit shocks produced no contagion.",
+      "sources": [
+        "Volatility challenges risk-taking - BIS Quarterly Review - https://www.bis.org/publ/qtrpdf/r_qt2512a.htm - December 2025",
+        "Financial Stability Report, November 2025 - Federal Reserve Board - https://www.federalreserve.gov/publications/files/financial-stability-report-20251107.pdf - 7 Nov 2025 (data as of 23 Oct 2025)",
+        "Global Financial Stability Report, October 2025, Ch.1 'Shifting Ground beneath the Calm' - IMF - https://www.imf.org/en/Publications/GFSR/Issues/2025/10/14/global-financial-stability-report-october-2025 - 14 Oct 2025"
+      ]
+    },
+    {
+      "memberId": "C3",
+      "question": "What actually ends asset bubbles (trigger mechanics, historical analogues, timing base rates), and what are the credible named 2026-specific catalysts?",
+      "summary": "DEGRADED RESEARCH: the researcher's web-search providers all failed (Exa 429, no other keys), so this record rests on model prior knowledge with unverified retrieval targets rather than fetched sources. Pattern claimed: bubbles end on funding-window closure plus liquidity tightening, not on valuation. Fed hiked ~175bp June 1999-May 2000; NASDAQ peaked 10 Mar 2000 as the IPO window shut for cash-burners; the deep leg came with the 2001 earnings/capex collapse. Telecom/fiber was worse because it was debt-funded: capex peaked 2000-01, defaults (Global Crossing, WorldCom) landed 12-24 months later. 2021-22 unwound on QT and hikes hitting long-duration cash-burners first. Equity peak typically leads capex peak by ~2-4 quarters. Base rate for named 'pops next year' calls is low (Greenspan Dec 1996 vs Mar 2000 peak); 'AI bubble' consensus press dates from mid-2024. 2026 catalysts to watch: hyperscaler Q4-25/Q1-26 'digestion' language or capex guide cuts, a flat frontier-model release, Fed path/QT, grid interconnection and retail electricity backlash, export controls, OpenAI revenue vs ~$1T contracted commitments, neocloud debt spreads. Strong too-early flag: capex is largely funded from operating cash flow, contracted backlog covers 2026 revenue, and the AI-adjacent refinancing wall is mostly 2027-2029.",
+      "sources": [
+        "UNVERIFIED (search providers unavailable) - Ofek & Richardson, 'DotCom Mania: Market Rationality of Internet Stock Prices' - Journal of Finance - 2003",
+        "UNVERIFIED - FOMC records / Federal Reserve H.15, 1999-2000 tightening cycle - 2000",
+        "UNVERIFIED - OECD/FCC analyses of 2000-02 telecom fiber overbuild and carrier defaults - 2003",
+        "UNVERIFIED - Hyperscaler 10-K/10-Q capex and RPO disclosures (MSFT, GOOGL, AMZN, META), FY2025 - 2025",
+        "UNVERIFIED - Press coverage of OpenAI compute commitments vs revenue - 2025"
+      ]
+    },
+    {
+      "memberId": "C4",
+      "question": "How deep and durable is real end-user and developer AI adoption as of late 2025 - is usage still compounding or plateauing?",
+      "summary": "Adoption is broadening and deepening on the usage axis but is thin at firm level and contested on measured value. Anthropic's Sept 2025 Economic Index shows directive full-task delegation rising 27% to 39% in eight months, automation overtaking augmentation, code-creation share doubling 4.1% to 8.6%, and enterprise API traffic 77% automation-dominant and price-insensitive - capability, not cost, drives uptake. Yet Census BTOS shows only 9.7% of US firms using AI in production (Aug 2025, up from 3.7% in 2023), with task usage highly concentrated (Gini 0.84-0.86). Developer breadth is near-saturated but souring: Stack Overflow 2025 reports 84% using or planning AI tools, 51% of professionals daily, while favorability fell from 70%+ to 60%, distrust (46%) exceeds trust (33%), 66% cite almost-right outputs and 45% slower debugging. METR's RCT found experienced OSS maintainers 19% slower with AI while believing they were 20% faster. Contested: self-reported versus measured productivity; breadth versus firm-level ROI. Consumer WAU/retention/churn primary data was unavailable this pass.",
+      "sources": [
+        "Anthropic Economic Index report: Uneven geographic and enterprise AI adoption - https://www.anthropic.com/research/anthropic-economic-index-september-2025-report - 2025-09-15",
+        "2025 Stack Overflow Developer Survey (AI section) - https://survey.stackoverflow.co/2025/ai - 2025",
+        "Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity (METR) - https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/ - 2025-07-10"
+      ]
+    },
+    {
+      "memberId": "C4",
+      "question": "What are the lived human consequences of an AI downturn, and how does an asset-price correction differ from a reversal of technology adoption?",
+      "summary": "Repricing and adoption reversal are separable. In 2000-2002 equity and telecom debt collapsed while internet usage and traffic kept growing; the fibre stayed in the ground. A 2026 correction would destroy claims on future AI cash flows (equity, GPU-backed debt, neocloud SPVs), not the capability already trained or workflows already embedded. Adoption reversal would require AI to stop being useful; no current signal supports that. The Bank of England (Oct 2025 FPC record, Dec 2025 FSR, Bank Overground) flags stretched AI valuations, roughly $100bn of new 2025 lending to AI firms via leveraged and private-market debt, and roughly $800bn of private credit in 2025-28 infrastructure financing, with explicit fragility around compute-demand assumptions, power, and depreciation schedules. Pain lands unevenly: debt-financed neoclouds first, thin application startups second, cash-funded hyperscalers last (writedowns, not insolvency). Human cost is already booked under boom conditions: Stanford (Nov 2025) finds a 16% relative employment decline for ages 22-25 in the most AI-exposed occupations; Challenger reports the highest Q4 layoffs since 2008 and lowest YTD hiring since 2010. A winter compounds junior-pipeline damage but does not reverse the substitution.",
+      "sources": [
+        "Canaries in the Coal Mine? Six Facts about the Recent Employment Effects of Artificial Intelligence (Brynjolfsson, Chandar, Chen) - https://digitaleconomy.stanford.edu/publications/canaries-in-the-coal-mine/ - Nov 2025",
+        "Financial Policy Committee Record - October 2025, Bank of England - https://www.bankofengland.co.uk/financial-policy-committee-record/2025/october-2025 - Oct 2025",
+        "All chips in! Would a fall in AI-related asset valuations have financial stability consequences? - https://www.bankofengland.co.uk/bank-overground/2025/all-chips-in-ai-related-asset-valuations-financial-stability-consequences - Oct 2025",
+        "Financial Stability Report - December 2025, Bank of England - https://www.bankofengland.co.uk/financial-stability-report/2025/december-2025 - Dec 2025",
+        "2025 Year-End Challenger Report: Highest Q4 Layoffs Since 2008; Lowest YTD Hiring Since 2010 - https://www.challengergray.com/blog/2025-year-end-challenger-report-highest-q4-layoffs-since-2008-lowest-ytd-hiring-since-2010/ - Jan 2026"
+      ]
+    },
+    {
+      "memberId": "C5",
+      "question": "Through 2026, is the AI capability and capex pipeline still translating frontier gains into new markets and revenue?",
+      "summary": "Demand and supply are still compounding into mid-2026. Nvidia's Q1 FY2027 (quarter ended Apr 26, 2026) posted record revenue of $81.6B (+85% y/y), Data Center $75.2B (+92%), with Q2 guidance of $91B excluding China datacenter compute. The Vera Rubin platform and Dynamo 1.0 inference software are explicitly positioned for agentic workloads (claimed up to 7x inference gains), and prior 10GW OpenAI / 1GW Anthropic commitments (Nov 2025) show the pipeline is pre-booked years out. Hyperscaler capex guidance is being revised up, not down: Meta moved 2026 capex from $115-135B to $125-145B to $130-145B by July 2026. Monetization signals are real but less audited: OpenAI said enterprise exceeded 40% of revenue and is tracking to consumer parity by end-2026; Anthropic overtook OpenAI in workplace adoption per Ramp (May 2026). Gaps: no verified token-volume series, no audited lab ARR, no confirmed Google/Meta/xAI 2026 roadmap disclosures. The unverified link is durable revenue per unit of capex.",
+      "sources": [
+        "NVIDIA Announces Financial Results for First Quarter Fiscal 2027 - https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-first-quarter-fiscal-2027 - May 20, 2026",
+        "NVIDIA Announces Financial Results for Third Quarter Fiscal 2026 - https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2026 - Nov 19, 2025",
+        "Meta and Microsoft report ballooning AI expenses - https://www.axios.com/2026/07/29/meta-microsoft-earnings-reports-ai - July 29, 2026",
+        "The next phase of enterprise AI (OpenAI) - https://openai.com/index/next-phase-of-enterprise-ai/ - April 2026",
+        "Anthropic overtakes OpenAI in workplace AI adoption - https://www.axios.com/2026/05/13/anthropic-openai-workplace-ai-adoption - May 13, 2026"
+      ]
+    },
+    {
+      "memberId": "C5",
+      "question": "How resilient is AI funding supply and market structure heading into 2026, and what probability do markets and institutions assign to a 2026 AI correction?",
+      "summary": "Capital supply is abundant but structurally more fragile. BIS (Dec 2025) finds the AI/Mag-7 rally is backed by realised earnings growth, unlike dotcom, while noting Mag-7 is now ~35% of S&P 500 market cap (vs ~20% in Nov 2022) and non-Mag-7 tech multiples approach dotcom-peak levels, magnifying spillover risk. IG and HY spreads sat near historical lows, but issuance slowed after First Brands/Tricolor defaults and BIS flags that recent big-tech data-centre bond issuance 'was not received favourably,' with spreads widening. Financing is migrating off balance sheet: Meta's Hyperion JV with Blue Owl (Oct 2025) used an SPV with roughly $27B+ debt against ~$2.5B equity, following a ~$29B PIMCO/Blue Owl mandate; JPMorgan flags Meta and Oracle as debt-market outliers. Private capital remains heavy - Crunchbase reports AI took roughly half of all 2025 venture dollars, ~$80B into foundation-model firms. Polymarket prices an 'AI industry downturn by 31 Dec 2026' near 15-16%, on a narrow 3-of-5 trigger definition. Unverified: sovereign/SoftBank sizing, IPO window, bank probabilities.",
+      "sources": [
+        "Volatility challenges risk-taking, BIS Quarterly Review - https://www.bis.org/publ/qtrpdf/r_qt2512a.htm - December 8, 2025",
+        "Meta Announces Joint Venture With Funds Managed by Blue Owl Capital to Develop Hyperion Data Center - https://about.fb.com/news/2025/10/meta-blue-owl-capital-develop-hyperion-data-center/ - October 2025",
+        "Blue Owl Seals Largest Private Capital Deal for Meta's AI Growth, Bloomberg - https://www.bloomberg.com/news/articles/2025-10-16/blue-owl-seals-largest-private-capital-deal-for-meta-s-ai-growth - October 16, 2025",
+        "Global Venture Funding In 2025 Surged As Startup Deals And Valuations Set All-Time Records, Crunchbase News - https://news.crunchbase.com/venture/funding-data-third-largest-year-2025/ - January 2026",
+        "AI bubble burst by...? Predictions & Odds, Polymarket - https://polymarket.com/event/ai-bubble-burst-by - accessed February 2026"
+      ]
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-C1-1",
+      "authorId": "C1",
+      "text": "Partial pop: a 2026 credit repricing at the leveraged tier, not a system-wide bust. No full pop in 2026. Defining 'pop' as a broad, durable break (AI-linked equities -40%+ from peak sustained 6+ months AND aggregate hyperscaler capex guidance cut >25% year-over-year), that is roughly 25-30% for 2026. Far likelier (~55-60%) is a localized credit event: a neocloud or lab-adjacent debt restructuring, an SPV/private-credit markdown, or a depreciation-life reversal. Observable triggers: any hyperscaler shortening server useful life; datacenter ABS/private-credit spreads widening >300bp; a top-five buildout counterparty missing a contracted payment; capex guidance cut at two or more hyperscalers in consecutive quarters. Two of four firing means the pop has started. Rationale: the system is bifurcated - hyperscalers still fund capex from operating cash flow with backlog-backed revenue, while leverage, circular vendor financing and counterparty concentration sit in Oracle, neoclouds and lab commitments where revenue (~$20B OpenAI run-rate) is an order of magnitude below contracted compute (~$175B/yr average). Historical overbuild cycles ran 4-7 years to break (fiber 1996-2001, railway 1844-47), placing the modal break in 2027-2028, and physical lead times (interconnect queues, transformers, turbines, HBM/CoWoS) meter capex deployment. Confidence 0.62."
+    },
+    {
+      "id": "P-C2-1",
+      "authorId": "C2",
+      "text": "No broad pop; a financing-side correction in the thin-margin layer. No. Define 'pop' as a broad AI demand collapse: sustained enterprise AI budget contraction plus a >40% peak-to-trough drawdown in AI-levered equities lasting two-plus quarters. That does not happen in 2026. What is likely instead is a narrower financing correction: down rounds, consolidation, or failures among negative-gross-margin AI application vendors and debt-financed neoclouds. Falsifiers: two consecutive quarters of declining aggregate hyperscaler AI capex guidance; Gartner/IDC revising 2026 AI spend growth below ~10%; a major neocloud or GPU-backed credit default; or hyperscalers shortening server depreciation lives after having extended them. Rationale: demand is durable - Gartner (+47% AI spend 2026) and IDC (+53%) converge independently, and usage-based retention holds (Snowflake 125% NRR, MongoDB 120%), with churn reading as reallocation within software budgets rather than exit. But operating economics in the thin layers are genuinely bad: Cursor around -23% to -31% gross margin, Anthropic ~40% GM, Oracle's ~$43B debt raise, CoreWeave recognizing depreciation ahead of stabilized revenue, and extended useful lives (4->6yr) flattering earnings today. Buyers keep paying; some sellers cannot afford to serve them. That kills companies, not the category, within a 12-month window. Confidence 0.66. Response-round refinement on the record: budget contraction was conceded to be sufficient rather than necessary, so a broad public-market credit break independently qualifies as a pop."
+    },
+    {
+      "id": "P-C3-1",
+      "authorId": "C3",
+      "text": "Violent repricing, not a systemic pop. No. Define 'pop' as a >40% peak-to-trough drawdown in AI-levered equities sustained over 6+ months PLUS a credit event forcing deleveraging at a top-10 AI counterparty. That conjunction is unlikely in 2026 (~20-25%). A partial event - a 20-30% AI-equity drawdown with a neocloud or data-centre SPV credit accident - is materially likelier (~45%). Falsifiers: two or more hyperscalers guiding capex down or using 'digestion' language on Q4-25/Q1-26 calls; data-centre ABS or GPU-collateralized loan spreads widening >300bp; a failed AI-related high-yield or SPV refinancing; GPU useful-life assumptions cut below five years. Rationale: BIS and the Fed's Nov 2025 FSR describe high valuation with low leverage - M7 at ~35% of S&P 500 cap but earnings-backed, business debt/GDP at 20-year lows, record bank capital, October 2025 credit shocks contained. Bubbles end when the funding window shuts for cash-burning issuers under a tightening impulse; no such impulse is scheduled for 2026, contracted backlog covers 2026 revenue, and the refinancing wall is 2027-2029. The genuine fragility is the channel the Fed names: bank commitments to SPEs, ABS and private credit (~$2.7tn) plus GPU residual-value assumptions, which matures later. 2026 is the catalyst-formation year; 2027 is the plausible break year, held as modal not exclusive. Confidence 0.62. Caveat: the second researcher's search failed, so historical base rates are unverified."
+    },
+    {
+      "id": "P-C4-1",
+      "authorId": "C4",
+      "text": "Financing pops, usage does not. Partial yes: a financing-layer pop in 2026 is more likely than not (~55%), but an adoption pop is unlikely (<10%). Define 'pop' as an asset-price and credit event, not a demand reversal: peak-to-trough drawdown above 40% in an AI-levered equity basket sustained over a quarter, plus a visible credit event in debt-financed GPU/neocloud or SPV financing, plus down rounds or shutdowns across a majority of thin application-layer startups. Triggers: hyperscaler capex guidance cuts, challenge to GPU depreciation schedules, private-credit spread widening on AI infrastructure paper, power-delivery slippage. Falsifier: token volumes and paid seats keep compounding through the drawdown. Rationale: usage evidence points away from demand collapse - Anthropic's index shows delegation depth rising and enterprise API demand price-insensitive - but firm-level penetration is only 9.7% and METR shows measured productivity can be negative where developers believe it is positive, leaving the financing story exposed. The BoE named the transmission channel: ~$100bn of 2025 AI lending and depreciation-schedule fragility, a claims problem rather than a capability problem. Dot-com and telecom show the asymmetry: prices collapsed, usage compounded. Human cost is already accruing under boom conditions (16% relative decline in 22-25 employment in exposed occupations). Confidence 0.62. Response-round concession on the record: the sponsor accepted C2's arithmetic that a three-term conjunction cannot exceed its rarest term and recalibrated the headline financing-pop figure from ~55% to ~30-35%; the frozen wording could not be edited, and the sponsor consequently voted NO on its own proposal."
+    },
+    {
+      "id": "P-C5-1",
+      "authorId": "C5",
+      "text": "No systemic pop in 2026; a financing-structure repricing instead. No. The AI bubble does not pop in 2026. Definition of 'pop': a peak-to-trough drawdown of 40%+ in a broad AI equity complex sustained 3+ months, PLUS aggregate hyperscaler 2027 capex guidance cut below 2026 actuals. Neither is likely by Dec 31, 2026. Expect instead a narrower repricing of leveraged/SPV-financed and pre-revenue AI names. Falsifying triggers: (1) any top-4 hyperscaler guiding 2027 capex down y/y; (2) data-centre ABS/bond spreads widening 300bp+ and a failed marquee issue; (3) Nvidia data-centre revenue declining sequentially two quarters running; (4) OpenAI or Anthropic taking a down round or missing disclosed enterprise-parity targets. Rationale: through mid-2026 the demand pipeline is pre-booked and still accelerating - Nvidia Q1 FY27 data centre $75.2B (+92% y/y) with $91B guided, plus 10GW/1GW multi-year commitments - and Meta raised 2026 capex three times to $130-145B, whereas firms cut capex before markets pop. BIS distinguishes this cycle from dotcom because earnings are realised, and Polymarket priced downturn-by-2026 at only ~15-16%. Agentic inference (Vera Rubin, Dynamo) is opening new markets, so capability still converts into demand. The real fragility BIS identifies is compositional: 35% index concentration and capex migrating into SPVs and private credit whose leverage is less visible, producing a credit-side shakeout in weak issuers rather than a systemic pop within twelve months. Confidence 0.68. Response-round concessions on the record: the 2027-guidance condition was demoted to confirmatory, the Polymarket print demoted to colour rather than evidence, and credit-spread plus SPV-disclosure markers accepted as the leading detectors."
+    }
+  ],
+  "readiness": [
+    {
+      "memberId": "C1",
+      "name": "Atlas",
+      "attempt": 2,
+      "alignmentType": "sponsor",
+      "proposalId": "P-C1-1",
+      "reason": "Only proposal with a dual quantitative pop test plus four falsifiable triggers tied to structural lead times.",
+      "statement": "Read all five frozen proposals and all research digests. Definitions are close enough to converge; disagreement is over 2026 vs 2027 timing and the leverage perimeter. Sponsors P-C1-1 and can vote on every proposal.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C2",
+      "name": "Forge",
+      "attempt": 1,
+      "alignmentType": "sponsor",
+      "proposalId": "P-C2-1",
+      "reason": "Threshold pairs a price test with the only operationally decisive one: enterprise budget contraction. Unit-economics data show normalization, not collapse.",
+      "statement": "Read all five frozen proposals. P-C5-1 is closest and best-dated; still sponsors P-C2-1 because a demand test beats a capex-guidance test operationally. Will vote YES on no-systemic-pop proposals and NO on high partial-pop odds.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C3",
+      "name": "Cassandra",
+      "attempt": 1,
+      "alignmentType": "sponsor",
+      "proposalId": "P-C3-1",
+      "reason": "Only P-C3-1 pairs a drawdown threshold with a named top-10 counterparty credit event and states the timing mechanism: the 2027-29 refinancing wall makes 2026 catalyst-formation.",
+      "statement": "All five proposals read. Four seats converge on 'no systemic pop, financing repricing'; the live disagreement is threshold duration and the probability of a financing-layer credit event. Sponsors P-C3-1 for its explicit counterparty trigger and timing mechanism.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C4",
+      "name": "Hearth",
+      "attempt": 1,
+      "alignmentType": "sponsor",
+      "proposalId": "P-C4-1",
+      "reason": "Only P-C4-1 separates financing-layer pop from adoption and adds an observable human/product marker alongside the credit test.",
+      "statement": "Read all five frozen proposals and the full digest. P-C4-1 stands: financing pops, usage does not. Will vote YES on partial-repricing proposals whose thresholds are falsifiable, NO where the definition can only be met after the fact.",
+      "readyToVote": true
+    },
+    {
+      "memberId": "C5",
+      "name": "Horizon",
+      "attempt": 1,
+      "alignmentType": "sponsor",
+      "proposalId": "P-C5-1",
+      "reason": "The forward-capex test (2027 guidance below 2026 actuals) is the cleanest falsifier; Nvidia Q1 FY27 +85% and Meta's thrice-raised $130-145B capex contradict a 2026 pop.",
+      "statement": "Read all five frozen proposals and every digest. Thresholds differ more than probabilities; the live disagreement is whether financing-layer damage counts as a pop. Will vote YES on non-pop framings that keep option value intact.",
+      "readyToVote": true
+    }
+  ],
+  "votes": [
+    {
+      "memberId": "C1",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "Own proposal; conjunction test is coherent, cash-flow-funded capex holds, and probabilities survived the life-extension demotion."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Making budget contraction sufficient rather than necessary fixed the overly tight conjunction; thin-margin/neocloud failure thesis is compatible with mine."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Fuse-formation framing and top-10 counterparty test are sound; 2027-modal dating is a defensible difference, not a defect."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "The arithmetic defect that drove first-ballot rejection was conceded and the figure recalibrated to ~30-35%; the adoption-vs-financing split is now consistent with the accepted set."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Sound no-systemic-pop conclusion, and the guidance test is now confirmatory with spread/SPV markers accepted as leading detectors."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "Post-concession it rests on OpenAI counterparty concentration, SPV leverage and refi spreads: falsifiable, operationally checkable, and consistent with no broad pop."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Own proposal; conjunction relaxed so demand contraction OR a broad public credit break qualifies, which removes the arithmetic objection I raised against others."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Averaging critique is correct and 2027 is held as modal not exclusive; its partial-event channel is compatible with my thin-margin failure forecast."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C4-1",
+      "vote": "NO",
+      "rationale": "Recalibration to ~30-35% is honest but the proposal remains frozen at ~55% for the financing-layer pop; I cannot ratify text whose headline number its sponsor has abandoned."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Guidance test demoted to confirmatory with spread and SPV-disclosure leading markers; now gives a usable 2026 tripwire instead of a lagging one."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "Cash-flow-funded capex framing is sound and the trigger is now falsifiable; localized credit probability differs from mine only in dating and threshold."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Sufficiency fix makes the definition testable; cost-normalization read is defensible even if containment is optimistic on collateral contagion."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Own seat: conjunctive systemic threshold at 20-25%, partial event 45%, 2027 modal. Deferral is accumulation, not dissipation."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C4-1",
+      "vote": "NO",
+      "rationale": "Recalibration to 30-35% is honest, but 'partial yes' still labels a sub-systemic financing stress as a pop, which conflates layer failure with a bubble popping."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Structure is sound after leading detectors were accepted; 0.68 confidence is higher than the evidence base warrants but not disqualifying."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "Post-concession Atlas rests on counterparty concentration and SPV leverage, with falsifiable dual-condition pop criteria. Compatible with the accepted set."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Demand-side durability is the correct human-impact read: enterprise adoption keeps compounding while thin-margin financing breaks. Sufficient-not-necessary fix improved it."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Best timing discipline of the set. 2026 catalyst-formation with 2027 modal break, held as modal not exclusive, is the honest shape of refinancing risk."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C4-1",
+      "vote": "NO",
+      "rationale": "Frozen wording still carries the ~55% headline financing-pop and cannot be edited; my recalibrated 30-35% is now represented inside C1 and C3. Consistent with my first ballot."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "With the 2027-guidance test demoted to confirmatory and leading spread/SPV markers accepted, Horizon is operationally usable rather than lagging."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "Cash-flow-funded capex framing is right and the localized credit-event probability now rests on OpenAI concentration and SPV leverage, not the demoted life-extension trigger."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Cost normalization plus thin-margin/neocloud failure is consistent with my financing-layer thesis; making budget contraction sufficient rather than necessary improved the trigger."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "2026 catalyst-formation with 2027 modal refi break is compatible with no systemic 2026 pop, and the deferral-is-accumulation point on SPV averages is sound."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "Financing-pop vs adoption-pop separation is the sharpest distinction on the table, and the recalibration to ~30-35% fixes the conjunction arithmetic C2 flagged."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Core claim survives debate; the 2027-guidance condition is now confirmatory with spread and SPV-disclosure markers leading, addressing K3 and K5."
+    }
+  ],
+  "conflicts": [
+    {
+      "proposalIdA": "P-C2-1",
+      "proposalIdB": "P-C4-1",
+      "severity": "high",
+      "declaredBy": [
+        "C1",
+        "C3"
+      ],
+      "description": "C2 Forge asserts no broad pop and treats thin-margin failures as non-pop; C4 Hearth calls a majority of app-layer down rounds plus a GPU/SPV credit event an affirmative partial pop. Same facts, opposite verdict.",
+      "resolution": "Moot after the ballot: P-C4-1 was not accepted (2-3 on both the first ballot and the reconciliation re-vote), so this edge does not join two accepted proposals."
+    },
+    {
+      "proposalIdA": "P-C3-1",
+      "proposalIdB": "P-C4-1",
+      "severity": "high",
+      "declaredBy": [
+        "C1",
+        "C2",
+        "C3",
+        "C5"
+      ],
+      "description": "C3 Cassandra dates the modal break to 2027 with 2026 as catalyst formation and requires 6+ months of drawdown; C4 Hearth expects the financing pop itself inside 2026 on a one-quarter drawdown bar. Duration threshold and probability both conflict.",
+      "resolution": "Moot after the ballot: P-C4-1 was not accepted, so this edge does not join two accepted proposals. C4 itself conceded the arithmetic and voted NO on its own frozen wording."
+    },
+    {
+      "proposalIdA": "P-C4-1",
+      "proposalIdB": "P-C5-1",
+      "severity": "high",
+      "declaredBy": [
+        "C2",
+        "C4",
+        "C5"
+      ],
+      "description": "C4 Hearth puts a financing-layer pop at ~55% in 2026; C5 Horizon scores the same events as sub-threshold repricing and says neither pop condition is likely by 31 Dec 2026.",
+      "resolution": "Moot after the ballot: P-C4-1 was not accepted, so this edge does not join two accepted proposals."
+    }
+  ],
+  "reconciliationRounds": [
+    {
+      "round": 1,
+      "trigger": "Four proposals were accepted by strict majority on the first ballot (P-C1-1, P-C2-1, P-C3-1, P-C5-1) while carrying five declared conflict edges between accepted proposals, so one mandatory reconciliation phase with fresh participants and a complete re-vote was run.",
+      "participants": [
+        {
+          "memberId": "C1",
+          "name": "Atlas",
+          "attempt": 2
+        },
+        {
+          "memberId": "C2",
+          "name": "Forge",
+          "attempt": 1
+        },
+        {
+          "memberId": "C3",
+          "name": "Cassandra",
+          "attempt": 1
+        },
+        {
+          "memberId": "C4",
+          "name": "Hearth",
+          "attempt": 1
+        },
+        {
+          "memberId": "C5",
+          "name": "Horizon",
+          "attempt": 1
+        }
+      ],
+      "edgesAddressed": [
+        {
+          "edgeId": "K1",
+          "proposalIdA": "P-C1-1",
+          "proposalIdB": "P-C2-1",
+          "declaredSeverity": "medium",
+          "declaredBy": [
+            "C5"
+          ],
+          "issue": "C1 treated useful-life extension as a pop trigger and put ~25-30% on a broad pop; C2 treated life extension as already-priced normalization and assigned effectively zero.",
+          "assessments": [
+            {
+              "memberId": "C1",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C2",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C4",
+              "status": "resolved"
+            },
+            {
+              "memberId": "C5",
+              "status": "resolved"
+            }
+          ],
+          "outcome": "Not in conflict. C1 demoted the useful-life-shortening trigger to minor confirmatory weight, which was the whole of C2's objection. Residual difference is a probability spread on the same mechanism, not incompatible claims."
+        },
+        {
+          "edgeId": "K2",
+          "proposalIdA": "P-C1-1",
+          "proposalIdB": "P-C3-1",
+          "declaredSeverity": "low",
+          "declaredBy": [
+            "C1",
+            "C4"
+          ],
+          "issue": "Both foresee localized credit repricing but differ on magnitude and dating: C1 ~55-60% localized credit event inside 2026 vs C3 ~45% partial event with 2027 as the modal break year.",
+          "assessments": [
+            {
+              "memberId": "C1",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C3",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C4",
+              "status": "narrowed"
+            }
+          ],
+          "outcome": "Not in conflict. C1 accepted C3's deferral-is-accumulation argument; C3 holds 2027 as modal, not exclusive. Both proposals share one mechanism and one direction, differing only on a testable threshold and calendar weighting."
+        },
+        {
+          "edgeId": "K3",
+          "proposalIdA": "P-C1-1",
+          "proposalIdB": "P-C5-1",
+          "declaredSeverity": "medium",
+          "declaredBy": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "issue": "C1's trigger (capex cuts at 2+ hyperscalers in consecutive quarters) fires materially earlier than C5's test (aggregate 2027 guidance below 2026 actuals), which lags the credit event.",
+          "assessments": [
+            {
+              "memberId": "C1",
+              "status": "resolved"
+            },
+            {
+              "memberId": "C2",
+              "status": "resolved"
+            },
+            {
+              "memberId": "C4",
+              "status": "resolved"
+            },
+            {
+              "memberId": "C5",
+              "status": "narrowed"
+            }
+          ],
+          "outcome": "Not in conflict. C5 demoted its 2027-guidance condition to confirmatory and adopted neocloud refi spreads and SPV disclosure as leading detectors, which is C1's own basis. The split is sequencing of detection, not substance."
+        },
+        {
+          "edgeId": "K4",
+          "proposalIdA": "P-C2-1",
+          "proposalIdB": "P-C3-1",
+          "declaredSeverity": "medium",
+          "declaredBy": [
+            "C2",
+            "C4"
+          ],
+          "issue": "Both reject a systemic pop, but C3 prices a ~45% partial credit accident where C2 confines damage to negative-GM vendors and debt-financed neoclouds.",
+          "assessments": [
+            {
+              "memberId": "C2",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C3",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C4",
+              "status": "narrowed"
+            }
+          ],
+          "outcome": "Not in conflict. C2 accepted C3's averaging critique (aggregate debt/GDP cannot price a single 11x SPV) and made budget contraction sufficient rather than necessary, so a broad credit break now qualifies under C2 too. Open item is contagion perimeter through shared GPU collateral, not whether a systemic pop occurs."
+        },
+        {
+          "edgeId": "K5",
+          "proposalIdA": "P-C3-1",
+          "proposalIdB": "P-C5-1",
+          "declaredSeverity": "medium",
+          "declaredBy": [
+            "C3"
+          ],
+          "issue": "C5's 0.68 confidence leaned on Nvidia growth and a thin ~15-16% Polymarket print; C3 treats both as weak evidence about tail credit risk.",
+          "assessments": [
+            {
+              "memberId": "C3",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C4",
+              "status": "narrowed"
+            },
+            {
+              "memberId": "C5",
+              "status": "narrowed"
+            }
+          ],
+          "outcome": "Not in conflict. C5 demoted the prediction-market print to colour rather than evidence and confined the Nvidia data to demand rather than tail credit. C3's residual objection is to a confidence level, not to the proposal's claim."
+        }
+      ],
+      "revote": {
+        "basis": "complete re-vote on all five frozen proposals by all five seats, strict majority floor(5/2)+1 = 3",
+        "tally": [
+          {
+            "proposalId": "P-C1-1",
+            "yes": 5,
+            "no": 0,
+            "result": "accepted"
+          },
+          {
+            "proposalId": "P-C2-1",
+            "yes": 5,
+            "no": 0,
+            "result": "accepted"
+          },
+          {
+            "proposalId": "P-C3-1",
+            "yes": 5,
+            "no": 0,
+            "result": "accepted"
+          },
+          {
+            "proposalId": "P-C4-1",
+            "yes": 2,
+            "no": 3,
+            "result": "rejected"
+          },
+          {
+            "proposalId": "P-C5-1",
+            "yes": 5,
+            "no": 0,
+            "result": "accepted"
+          }
+        ],
+        "changeFromFirstBallot": "none - the re-vote reproduced the first ballot exactly on every proposal"
+      },
+      "outcome": "No seat marked any edge between two accepted proposals as unresolved; every assessment was resolved or narrowed. All three high-severity edges involved P-C4-1, which was not accepted. No two accepted proposals remain in conflict."
+    }
+  ],
+  "modelWarning": "All five seats ran on the same model (openai/gpt-5.6-luna), so correlated model bias is not controlled for. Two of ten research records were degraded by web-search provider failures: both C1 Atlas records (attempt 2) and C3 Cassandra's historical-base-rate record rest partly on model prior knowledge with unverified sources. Several researcher-supplied figures carry mid-2026 dates, so part of the forecast window may already be observed history rather than forecast; the council did not resolve that as-of ambiguity.",
+  "status": "CONSENSUS",
+  "acceptedProposalIds": [
+    "P-C1-1",
+    "P-C2-1",
+    "P-C3-1",
+    "P-C5-1"
+  ],
+  "report": "COUNCIL RECORD - run council-ms8w4jhy-228e5013\nQuestion: will the AI bubble pop in 2026?\nChairman: procedural only, non-voting. The chairman researched nothing, proposed nothing, aligned with nothing, and cast no ballot.\n\nPROCEDURE\n1. Member research. Five council-member seats were launched in one parallel fanout at the 420000ms member timeout, each required to dispatch exactly two council-researcher tasks at the 180000ms researcher timeout under a limit of 3 queries and 5 sources per researcher. C1 Atlas (attempt 1) failed with protocol_output_limit during its researcher fanout and was replaced once; C1 Atlas attempt 2 returned a complete dossier, leaving one replacement still available. Seats C2 Forge, C3 Cassandra, C4 Hearth and C5 Horizon returned on attempt 1. Ten research records were recorded, two per member. Two are explicitly degraded: both C1 attempt-2 records and C3's historical-base-rate record lost their web-search providers and rest partly on unverified model prior knowledge. That caveat is preserved in the records rather than smoothed away.\n2. Proposal freeze. Five unique proposals, one per seat: P-C1-1 (Atlas), P-C2-1 (Forge), P-C3-1 (Cassandra), P-C4-1 (Hearth), P-C5-1 (Horizon). The chairman invented nothing.\n3. Alignment. Five council-participant tasks at the 240000ms participant timeout. All five seats returned readyToVote=true. Every seat sponsored its own proposal; no seat aligned with another. The round produced 20 direct challenges and conflict declarations including three high-severity edges, all of them touching P-C4-1.\n3a. Response round. Because alignment produced direct challenges and medium/high conflicts, one fresh alignment-debate fanout ran before any ballot opened. It moved real positions: C4 Hearth conceded C2 Forge's arithmetic that a three-term conjunction cannot exceed its rarest term and recalibrated its headline financing-pop figure from ~55% to ~30-35%; C2 Forge made enterprise budget contraction sufficient rather than necessary; C1 Atlas demoted its useful-life-shortening trigger to minor confirmatory weight; C5 Horizon demoted its 2027-capex-guidance condition to confirmatory and accepted credit-spread and SPV-disclosure markers as leading detectors; C3 Cassandra held 2027 as the modal but not exclusive break year after conceding C1's accounting-restatement channel.\n4. Ballot. Five fresh voting participants, one YES or NO per seat on every proposal. Strict majority = floor(5/2)+1 = 3. Accepted: P-C1-1 5-0, P-C2-1 5-0, P-C3-1 5-0, P-C5-1 5-0. Rejected: P-C4-1 2-3, its sponsor C4 Hearth voting NO on its own frozen wording because the frozen text still carried the ~55% figure it had abandoned.\n5. Reconciliation. Because accepted proposals carried declared conflicts, exactly one reconciliation phase ran with fresh participants and a complete re-vote. Five accepted-accepted edges were put to the seats that owned them. Every assessment came back resolved or narrowed; no seat declared any edge unresolved. The re-vote reproduced the first ballot exactly. All three high-severity edges attach to P-C4-1, which was not accepted, so no edge in the conflicts record joins two accepted proposals.\n\nOUTCOME - CONSENSUS\nThe council's answer is: no, the AI bubble does not pop in 2026 on any definition the council was willing to defend, but the financing layer beneath it is expected to reprice, and several seats put the modal systemic break in 2027-2029 rather than never.\n\nFour accepted proposals converge on a two-tier structure. Hyperscaler capex remains predominantly funded from operating cash flow against backlog-backed revenue, business debt to GDP sits near 20-year lows, and demand indicators were still accelerating in the evidence window (independent Gartner and IDC 2026 AI-spend forecasts of roughly +44-53%, usage-based net retention of 120-125%, Nvidia data-centre revenue +92% year over year, Meta raising 2026 capex three times). The fragility is concentrated instead in a thinner tier: debt-financed neoclouds, off-balance-sheet SPVs such as the Meta/Blue Owl Hyperion vehicle at roughly 11x debt to equity, negative-gross-margin application vendors, and model-lab compute commitments an order of magnitude above current revenue run-rates. Index concentration of roughly 35% of S&P 500 capitalisation in the Magnificent 7 means any re-rating of that tier transmits widely, which is why the seats treat repricing as likely and systemic rupture as not.\n\nThe accepted band on a broad, durable pop inside 2026 is roughly 20-30%. The accepted band on a localised leveraged-tier credit event inside 2026 is roughly 45-60%. Shared leading indicators the council converged on: data-centre ABS or GPU-collateralised loan spreads widening more than 300bp, a failed marquee SPV or high-yield refinancing, a top-five buildout counterparty missing a contracted payment, capex guidance cuts at two or more hyperscalers in consecutive quarters, and any hyperscaler shortening server useful lives after having extended them. Every seat agreed that an asset-price and credit correction is separable from an adoption reversal, and that no current evidence supports the latter.\n\nRECORDED DISSENT AND RESIDUAL DISAGREEMENT, PRESERVED NOT ERASED\nP-C4-1 (Hearth, 'Financing pops, usage does not') was rejected 2-3 twice. Its substantive distinction between a financing-layer pop and an adoption pop was widely praised - C5 Horizon called it the sharpest distinction on the table and voted YES both times, as did C1 Atlas on the re-vote - but C2 Forge, C3 Cassandra and Hearth itself refused to ratify frozen text whose headline probability its own sponsor had abandoned. The rejection was about definitional stability, not about the underlying human-impact claim, which survives inside the accepted set.\nC3 Cassandra dissents on dating: it holds 2026 as catalyst-formation and 2027 as the modal break year, arguing that deferral is accumulation because aggregate leverage averages cannot price a single 11x vehicle, and that October 2025's contained credit shocks left exposure in place and larger. C1 Atlas reads the same fuse as capable of igniting inside 2026. C3 also records that C5's 0.68 confidence exceeds what its evidence base warrants.\nC2 Forge dissents on contagion perimeter, confining damage to negative-margin vendors and debt-financed neoclouds; C3 keeps the open question of whether an OpenAI-linked SPV counts as 'confined' given shared GPU collateral and cross-guarantees.\nC4 Hearth records that the human cost is already accruing under boom conditions rather than being caused by a correction: a 16% relative employment decline for ages 22-25 in the most AI-exposed occupations, the highest Q4 layoffs since 2008 and the lowest year-to-date hiring since 2010. It insists that junior-pipeline damage is adoption-driven and would survive any repricing.\nEvidence-quality dissent stands on the record: two of ten research records are degraded, several cited figures were search-synthesized rather than directly verified, no seat obtained audited lab revenue or token-volume series, and all five seats ran on one model, so correlated bias is uncontrolled. Several sources carry mid-2026 dates, which C2 Forge flagged as an unresolved as-of ambiguity in the question itself.\n\nStatus is CONSENSUS because four proposals were accepted by strict majority and no two accepted proposals remain in conflict after the single reconciliation round. Individual recorded dissent is preserved in the member records, readiness, votes and this report rather than in the status token."
+}

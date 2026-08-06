@@ -11,7 +11,7 @@
     "blockImages": false
   },
   "defaultProvider": "openai",
-  "defaultModel": "gpt-5.6-terra",
+  "defaultModel": "gpt-5.6-luna",
   "defaultThinkingLevel": "high",
   "compaction": {
     "enabled": true,
@@ -136,5 +136,6 @@
     "npm:pi-web-access@0.13.0",
     "npm:pi-lens@3.8.71",
     "npm:pi-mcp-adapter@2.11.0"
-  ]
+  ],
+  "hideThinkingBlock": false
 }

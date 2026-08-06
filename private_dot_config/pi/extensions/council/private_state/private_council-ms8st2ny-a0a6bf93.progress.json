@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "runId": "council-ms8st2ny-a0a6bf93",
+  "updatedAt": 1785495289829,
+  "phase": "publishing",
+  "message": "Reconciliation complete, re-vote tallied: P-C1 5-0, P-C2 5-0, P-C3 4-1, P-C5 3-2 accepted; P-C4 rejected 0-5 (C4 voted against its own proposal, as did C5 on P-C5). Conflict verdicts: P-C1/P-C5 resolved unanimously, P-C2/P-C5 resolved 3-2, but P-C3/P-C5 SURVIVES per 4 of 5 seats and P-C1/P-C3 SURVIVES per 3 of 5, with both endpoints accepted in each case. Only one reconciliation phase is permitted, so status is UNRESOLVED_CONFLICT. Publishing the manifest now.",
+  "completed": 5,
+  "total": 5,
+  "status": "RUNNING",
+  "seats": [
+    {
+      "memberId": "C1",
+      "activity": "voted-yes",
+      "detail": "P-C1"
+    },
+    {
+      "memberId": "C2",
+      "activity": "voted-yes",
+      "detail": "P-C2"
+    },
+    {
+      "memberId": "C3",
+      "activity": "voted-no",
+      "detail": "P-C5"
+    },
+    {
+      "memberId": "C4",
+      "activity": "voted-no",
+      "detail": "P-C4"
+    },
+    {
+      "memberId": "C5",
+      "activity": "voted-no",
+      "detail": "P-C5"
+    }
+  ],
+  "focus": {
+    "proposalId": "P-C3",
+    "title": "Negative verdict vs P-C5",
+    "yes": 4,
+    "no": 1
+  }
+}

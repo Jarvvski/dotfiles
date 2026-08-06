@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "runId": "council-ms7o1bff-3e67d6aa",
+  "updatedAt": 1785429273013,
+  "phase": "failed",
+  "message": "Chairman process exited during publishing without a valid manifest (invalid member IDs). Marked failed by operator.",
+  "status": "FAILED",
+  "completed": 5,
+  "total": 5,
+  "seats": [
+    {
+      "memberId": "C1",
+      "activity": "voted-yes",
+      "detail": "P-C1-1"
+    },
+    {
+      "memberId": "C2",
+      "activity": "voted-yes",
+      "detail": "P-C4-1"
+    },
+    {
+      "memberId": "C3",
+      "activity": "voted-yes",
+      "detail": "P-C3-1"
+    },
+    {
+      "memberId": "C4",
+      "activity": "voted-yes",
+      "detail": "P-C4-1"
+    },
+    {
+      "memberId": "C5",
+      "activity": "voted-no",
+      "detail": "P-C4-1"
+    }
+  ]
+}

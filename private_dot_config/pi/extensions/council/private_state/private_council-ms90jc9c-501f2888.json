@@ -1,0 +1,694 @@
+{
+  "version": 1,
+  "runId": "council-ms90jc9c-501f2888",
+  "createdAt": "2026-02-14T00:00:00Z",
+  "question": "will https://www.lorum.com/ become a `$ billion` unicorn?",
+  "memberCount": 5,
+  "chairmanModel": "anthropic/claude-sonnet-5",
+  "researcherModel": "anthropic/claude-sonnet-5",
+  "members": [
+    {
+      "id": "C1",
+      "name": "Atlas",
+      "bias": "Systems coherence and long-term architecture",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "confidence": "medium",
+      "proposalIds": [
+        "P-C1-1",
+        "P-C1-2"
+      ],
+      "dissent": "Disputes treating a live website, a charter filing, or self-reported 55x growth as evidence of unicorn trajectory; also disputes any categorical impossibility claim."
+    },
+    {
+      "id": "C2",
+      "name": "Forge",
+      "bias": "Pragmatic delivery, simplicity, and operational cost",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "confidence": "medium",
+      "proposalIds": [
+        "P-C2-1",
+        "P-C2-2"
+      ],
+      "dissent": "Disputes the lorem-ipsum/placeholder framing of the premise (category mismatch) and disputes any YES resting on category size or large fintech comparables alone."
+    },
+    {
+      "id": "C3",
+      "name": "Cassandra",
+      "bias": "Adversarial risk, failure modes, and security",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "confidence": "medium",
+      "proposalIds": [
+        "P-C3-1",
+        "P-C3-2"
+      ],
+      "dissent": "Disputes any YES based on domain age, polished pages, API docs, or absence of scam reports; also disputes any claim that Lorum is fraudulent."
+    },
+    {
+      "id": "C4",
+      "name": "Hearth",
+      "bias": "Human, developer, and product impact",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "confidence": "low",
+      "proposalIds": [
+        "P-C4-1",
+        "P-C4-2"
+      ],
+      "dissent": "Disputes an unconditional YES from market size, seed round, or regulatory ambition, and an unconditional NO that treats thin public evidence as proof of weak performance."
+    },
+    {
+      "id": "C5",
+      "name": "Horizon",
+      "bias": "Innovation, optionality, and future leverage",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "status": "active",
+      "confidence": "low",
+      "proposalIds": [
+        "P-C5-1",
+        "P-C5-2"
+      ],
+      "dissent": "Disputes both that the domain alone creates unicorn probability and that absent public traction proves impossibility; holds asymmetric-optionality position."
+    }
+  ],
+  "research": [
+    {
+      "memberId": "C1",
+      "researcher": "A",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 3,
+      "summary": "lorum.com is a real operating fintech infrastructure company, not a placeholder or parked domain: global clearing, correspondent banking, multi-currency accounts, cash management, FX, treasury, ~30 markets, developer API docs, one named customer testimonial (Sentvia), reportedly rebranded from Fuse, self-reported US national trust bank charter filing and 55x 2025 growth.",
+      "sources": [
+        "https://www.lorum.com/",
+        "https://www.lorum.com/article/lorum-occ-national-trust-bank-charter",
+        "https://0e190a550a8c4c8c4b93-fcd009c875a5577fd4fe2f5b7e3bf4eb.ssl.cf2.rackcdn.com/EINPresswire-873875064-fuse-rebrands-as-lorum-to-rebuild-institutional-clearing-1.pdf",
+        "https://www.sentvia.com/about",
+        "https://docs.lorum.com/docs/getting-started"
+      ],
+      "confidence": "medium",
+      "unverified": "Funding, investors, valuation, revenue, traffic, headcount, legal entity, OCC application status."
+    },
+    {
+      "memberId": "C1",
+      "researcher": "B",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 3,
+      "summary": "Third-party aggregators (Dealroom, Caplight) reportedly place Lorum enterprise value/valuation around $26M-$40M with roughly $40M total funding, unconfirmed by the company. Venture-backed unicorn conversion base rate is roughly 1%-1.3% lifetime (about 0.10% within 24 months). Reaching $1B needs sustained revenue growth, large market, strong investors, financing step-ups, and defensible differentiation.",
+      "sources": [
+        "https://www.lorum.com/",
+        "https://app.dealroom.co/companies/lorum",
+        "https://www.caplight.com/company/lorum",
+        "https://www.cbinsights.com/research/unicorn-conversion-rate/",
+        "https://www.angellist.com/blog/angellist-unicorn-rate"
+      ],
+      "confidence": "medium",
+      "unverified": "Revenue/ARR, named investors, official valuation, whether aggregator records refer to the same entity."
+    },
+    {
+      "memberId": "C2",
+      "researcher": "A",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 3,
+      "summary": "Active B2B fintech infrastructure company: multi-currency clearing over domestic rails, named/segregated client accounts, FX, balance sweeps, treasury management for banks, fintechs, payroll platforms, PSPs, marketplaces. Enterprise sales model with no public pricing; LinkedIn reports about 51-200 employees and a 2023 founding date; site claims an OCC national trust bank charter application.",
+      "sources": [
+        "https://www.lorum.com/",
+        "https://www.lorum.com/about",
+        "https://www.linkedin.com/company/lorum-finance",
+        "https://www.lorum.com/article/lorum-occ-national-trust-bank-charter",
+        "https://www.lorum.com/product/multi-currency-clearing"
+      ],
+      "confidence": "medium",
+      "unverified": "Revenue, ARR, funding, investors, exact headcount, pricing, transaction volume, customer count, valuation, charter status."
+    },
+    {
+      "memberId": "C2",
+      "researcher": "B",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 3,
+      "summary": "Lorum's category is regulated B2B financial infrastructure, not lorem-ipsum placeholder-text generation; the lorem-ipsum comparison is a category mismatch. Lorem ipsum utilities are free or lightly monetized and none has reached a $1B valuation. Reliable Lorum traffic estimates were not found; fintech infrastructure has large-company precedents but none established Lorum's own trajectory.",
+      "sources": [
+        "https://www.lorum.com/about",
+        "https://www.lipsum.com/",
+        "https://ahrefs.com/websites/lipsum.com/competitors",
+        "https://loremipsum.io/generator/",
+        "https://www.semrush.com/website/loremipsum.io/overview/"
+      ],
+      "confidence": "low",
+      "unverified": "Lorum traffic, funding, revenue, valuation, customer volume, growth rate; specific fintech valuation comparables."
+    },
+    {
+      "memberId": "C3",
+      "researcher": "A",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 3,
+      "summary": "Adversarial diligence: domain reportedly registered 1999-05-07 with WHOIS privacy; site has substantive fintech content, a named legal entity, contact page, privacy terms, and API docs, consistent with an active early-stage business rather than a typosquat or ad farm. ScamAdviser rates it very likely safe; no scam, malware, or phishing reports found, though signals are automated and weak-to-moderate.",
+      "sources": [
+        "https://www.scamadviser.com/check-website/lorum.com",
+        "https://www.lorum.com/about",
+        "https://www.lorum.com/legal/privacy-policy",
+        "https://www.lorum.com/contact-us",
+        "https://docs.lorum.com/docs/getting-started"
+      ],
+      "confidence": "medium",
+      "unverified": "Raw WHOIS, corporate registration of Lorum Group Holdings Inc., financial licenses, direct malware-database status, customer complaints."
+    },
+    {
+      "memberId": "C3",
+      "researcher": "B",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 3,
+      "summary": "Signals about the domain's current identity were contradictory (active fintech versus parked/placeholder) and the active characterization was not independently fetched in this pass. Unicorn conversion is approximately 1% or less for venture-backed startups (CB Insights about 1.07%-1.28% lifetime, about 0.10% over 24 months). No Lorum-specific traffic, funding, valuation, revenue, customer, or headcount data verified.",
+      "sources": [
+        "https://www.lorum.com/about",
+        "https://www.scamadviser.com/check-website/lorum.com",
+        "https://www.cbinsights.com/research/unicorn-conversion-rate/",
+        "https://www.cbinsights.com/mosaic-whitepaper/",
+        "https://www.cbinsights.com/research-unicorn-companies"
+      ],
+      "confidence": "low",
+      "unverified": "Live content and business model, traffic, funding, investors, valuation, revenue, customers, team size, attribution of the fintech description to this domain."
+    },
+    {
+      "memberId": "C4",
+      "researcher": "A",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 2,
+      "summary": "B2B-only fintech infrastructure (global clearing, named/segregated client accounts, FX, treasury automation, multi-rail settlement) for banks, fintechs, PSPs, marketplaces, payroll and investment platforms; no retail offering. Sentvia is the only named customer. Independent user commentary is effectively absent: GetApp shows zero reviews and no substantive Trustpilot, G2, Capterra, Reddit, Hacker News, or GitHub discussion was found.",
+      "sources": [
+        "https://www.lorum.com/",
+        "https://www.getapp.com/finance-accounting-software/a/lorum/",
+        "https://www.scamadviser.com/check-website/lorum.com",
+        "https://www.trustpilot.com/review/lorman.com",
+        "https://www.capterra.com/p/10020515/Locorum/reviews/"
+      ],
+      "confidence": "low",
+      "unverified": "Customer satisfaction, customer count, revenue, transaction volume, funding, valuation, organic developer engagement, regulatory authorization, 1999 registration versus newer brand discrepancy."
+    },
+    {
+      "memberId": "C4",
+      "researcher": "B",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 2,
+      "summary": "The need addressed (cross-border clearing, local-rail settlement, segregated client accounts, FX, treasury) is real, high-value, and monetizable at scale via transaction fees, FX spreads, and account fees, with payments-infrastructure precedent. Free IDE/AI built-in alternatives are irrelevant since Lorum is not a developer tool; competition comes from banks, correspondent networks, and BaaS/payments providers. Public demand evidence is weak: one testimonial plus a reported $6.6M seed round.",
+      "sources": [
+        "https://www.lorum.com/",
+        "https://www.fintechfutures.com/regulatory-actions/lorum-files-for-us-national-trust-charter",
+        "https://www.lorum.com/product/multi-currency-clearing",
+        "https://www.lorum.com/article/lorum-occ-national-trust-bank-charter",
+        "https://www.capterra.com/p/10035115/Lorum/"
+      ],
+      "confidence": "low",
+      "unverified": "Seed figure, charter filing/approval status, traction, revenue, transaction volume, customer count, independent sentiment, later financing, entity attribution of the frozen URL."
+    },
+    {
+      "memberId": "C5",
+      "researcher": "A",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 1,
+      "summary": "Steelman for upside: lorum.com is the live domain of a fintech that rebranded from Fuse in 2024/2025, positioned as a correspondent-institution, clearing, transaction-banking and treasury partner for regulated banks and fintechs. Genuine infrastructure-fintech category upside, but no credible evidence of funding, revenue, customers, valuation, acquisition activity, or premium domain resale value; the name is generic and crowded, limiting a domain-only thesis.",
+      "sources": [
+        "https://www.lorum.com/about",
+        "https://0e190a550a8c4c8c4b93-fcd009c875a5577fd4fe2f5b7e3bf4eb.ssl.cf2.rackcdn.com/EINPresswire-873875064-fuse-rebrands-as-lorum-to-rebuild-institutional-clearing-1.pdf",
+        "https://techround.co.uk/mena/30-lorum/",
+        "https://app.dealroom.co/companies/lorum",
+        "https://www.whoxy.com/lorum.com"
+      ],
+      "confidence": "low",
+      "unverified": "Funding history, investors, valuation, revenue, customer count, licensing, acquisition plans, prior Fuse backing, domain appraisal or sale."
+    },
+    {
+      "memberId": "C5",
+      "researcher": "B",
+      "model": "anthropic/claude-sonnet-5",
+      "queriesUsed": 1,
+      "summary": "Precedents for tiny utilities or premium assets underpinning large businesses (The Point to Groupon, Mailchimp, Snowdevil to Shopify, Openvid to Loom) all required a real recurring user problem, founders able to generalize the technology, preserved infrastructure or audience through the pivot, and either long bootstrapped runway or very fast iteration. No verified case showed a premium domain alone creating a $1B+ business; the domain was at most an enabler. Two follow-up searches were rate-limited.",
+      "sources": [
+        "https://www.businessinsider.com/groupon-pivot-2011-3",
+        "https://www.realhow.net/playbooks/ben-chestnut-mailchimp-bootstrapped-12-billion-no-funding",
+        "https://theforked.ai/blog/shopify-snowdevil-pivot-decisions-en",
+        "https://wellfound.com/blog/the-usd780m-pivot-how-zain-jaffer-turned-reluctant-customer-calls-into",
+        "https://courier.fyi/case-studies/the-loom-success-story-how-a-chrome-extension-built-on-two-weeks-of-runway-sold-for-975-million/"
+      ],
+      "confidence": "medium",
+      "unverified": "Direct premium-domain-to-unicorn precedent; reported valuation figures and Loom domain detail not primary-checked; two searches rate-limited."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-C1-1",
+      "authorId": "C1",
+      "text": "Verdict NO - Real fintech, but unicorn outcome is unlikely: lorum.com is a genuine fintech with a potentially scalable clearing platform, not a placeholder domain, but available evidence does not support expecting a $1B unicorn outcome; an apparent $26M-$40M valuation plus missing verified revenue, investor and growth data imply a probability at or below the roughly 1%-1.3% base rate."
+    },
+    {
+      "id": "P-C1-2",
+      "authorId": "C1",
+      "text": "Verdict CONDITIONAL - Conditional upside depends on verified scaling evidence: YES becomes defensible only with sustained, independently verifiable growth in transaction volume and high-margin revenue, a completed regulatory strategy, and institutional investors plus distribution able to support 10x-or-greater valuation expansion; absent those proofs the rational forecast is NO."
+    },
+    {
+      "id": "P-C2-1",
+      "authorId": "C2",
+      "text": "Verdict NO - Base-case verdict, not yet a billion-dollar unicorn: on currently verifiable evidence Lorum should not be forecast to become a $1B unicorn; it is a credible operating fintech but there is no public proof of the revenue, funding, customer scale, regulatory completion or growth that outcome requires."
+    },
+    {
+      "id": "P-C2-2",
+      "authorId": "C2",
+      "text": "Verdict CONDITIONAL - Upside requires measurable fintech scale milestones: a $1B outcome is possible only with rapid compliant expansion into a high-volume financial infrastructure platform, evidenced by material recurring revenue, major institutional customers, strong net retention, completed regulatory permissions and credible unit economics net of payment, compliance and liquidity costs."
+    },
+    {
+      "id": "P-C3-1",
+      "authorId": "C3",
+      "text": "Verdict NO - Reject the unicorn claim absent verified traction: lorum.com is unlikely to become a billion-dollar unicorn; the domain may represent a legitimate early fintech, but there is no independently verified evidence of the exceptional funding, traction, scale or defensible growth needed to beat a roughly 1%-or-lower base rate."
+    },
+    {
+      "id": "P-C3-2",
+      "authorId": "C3",
+      "text": "Verdict CONDITIONAL - Conditional yes only after primary-source validation: YES is defensible only if primary evidence confirms an operating Lorum fintech with material regulated partnerships, rapidly growing transaction volume, meaningful recurring revenue, institutional funding and a credible path to category dominance; until then the security-conscious forecast remains NO."
+    },
+    {
+      "id": "P-C4-1",
+      "authorId": "C4",
+      "text": "Verdict CONDITIONAL - Plausible market, insufficient evidence for a unicorn verdict: Lorum serves a consequential, monetizable enterprise need so a billion-dollar outcome is possible, but current public evidence cannot support predicting it; the verdict should turn YES only after independently verified growth in customers, payment volume, revenue, regulatory execution and follow-on financing."
+    },
+    {
+      "id": "P-C4-2",
+      "authorId": "C4",
+      "text": "Verdict NO - Do not forecast unicorn status without traction disclosure: on evidence currently available the answer is NO, there is no defensible basis to say Lorum will become a billion-dollar unicorn. This is an evidence-based forecast, not a claim that the business lacks a viable product or market."
+    },
+    {
+      "id": "P-C5-1",
+      "authorId": "C5",
+      "text": "Verdict CONDITIONAL - Conditional on fintech execution, not domain ownership: Lorum could become a $1B unicorn only if the operating fintech, not the domain, establishes regulated banking infrastructure, material transaction volume and defensible institutional distribution; on current public evidence the rebrand and domain provide optionality but no positive base case."
+    },
+    {
+      "id": "P-C5-2",
+      "authorId": "C5",
+      "text": "Verdict NO - Treat lorum.com as a low-cost option, not an outcome signal: lorum.com should not currently be judged likely to become a $1B unicorn based on its domain, brand or publicly visible evidence; the rational stance preserves the upside option while assigning a low prior until independent milestones demonstrate product-market fit, regulatory depth and scalable distribution."
+    }
+  ],
+  "readiness": [
+    {
+      "memberId": "C1",
+      "name": "Atlas",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "sponsoredProposalId": "P-C1-1",
+      "alignedProposalIds": [
+        "P-C1-2",
+        "P-C2-1",
+        "P-C2-2",
+        "P-C3-1",
+        "P-C3-2",
+        "P-C4-1",
+        "P-C4-2",
+        "P-C5-1",
+        "P-C5-2"
+      ],
+      "readyToVote": true,
+      "statement": "Considered every frozen proposal; ready to vote favoring an evidence-calibrated unlikely base case while preserving conditional upside if the specified milestones are verified."
+    },
+    {
+      "memberId": "C2",
+      "name": "Forge",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "sponsoredProposalId": "P-C2-1",
+      "alignedProposalIds": [
+        "P-C1-1",
+        "P-C3-1",
+        "P-C4-2",
+        "P-C5-2"
+      ],
+      "readyToVote": true,
+      "statement": "Considered all frozen proposals; the conditional proposals are compatible with a base-case rejection because they describe what evidence would change the forecast rather than asserting that evidence exists."
+    },
+    {
+      "memberId": "C3",
+      "name": "Cassandra",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "sponsoredProposalId": "P-C3-1",
+      "alignedProposalIds": [
+        "P-C2-1",
+        "P-C4-2",
+        "P-C5-2",
+        "P-C3-2"
+      ],
+      "readyToVote": true,
+      "statement": "Considered every frozen proposal; supports rejecting a present-tense unicorn forecast while preserving a conditional path if primary-source traction, regulatory, and financial evidence emerges."
+    },
+    {
+      "memberId": "C4",
+      "name": "Hearth",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "sponsoredProposalId": "P-C4-1",
+      "alignedProposalIds": [
+        "P-C2-2",
+        "P-C3-2",
+        "P-C5-1",
+        "P-C1-2"
+      ],
+      "readyToVote": true,
+      "statement": "Sponsors the conditional market-impact position that plausible customer value is distinct from demonstrated scale; ready to vote after considering all frozen proposals."
+    },
+    {
+      "memberId": "C5",
+      "name": "Horizon",
+      "model": "openai/gpt-5.6-luna",
+      "attempt": 1,
+      "sponsoredProposalId": "P-C5-1",
+      "alignedProposalIds": [
+        "P-C4-1",
+        "P-C2-2",
+        "P-C3-2"
+      ],
+      "readyToVote": true,
+      "statement": "Sponsors the conditional execution thesis and aligns with proposals preserving upside while demanding verifiable milestones; finds no frozen proposals logically incompatible."
+    }
+  ],
+  "conflicts": [],
+  "votes": [
+    {
+      "memberId": "C1",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "The company appears real and operational, but the evidence and base rate support treating a billion-dollar outcome as unlikely."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C1-2",
+      "vote": "YES",
+      "rationale": "A conditional positive case is appropriate only if primary-source evidence verifies scaling, economics, regulatory completion, and institutional distribution."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "The available evidence does not support a defensible forecast that lorum.com will become a billion-dollar unicorn."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C2-2",
+      "vote": "YES",
+      "rationale": "Measurable scale and credible net unit economics are necessary to distinguish a plausible fintech pathway from unsupported optimism."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Absent verified traction, legitimacy alone does not overcome the roughly one-percent-or-less unicorn base rate."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C3-2",
+      "vote": "YES",
+      "rationale": "Primary-source validation of partnerships, volume, revenue, and institutional funding would be required before assigning meaningful upside confidence."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "The market may be monetizable, but insufficient customer evidence and unit-economic disclosure justify only a conditional assessment."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C4-2",
+      "vote": "YES",
+      "rationale": "Unicorn status should not be forecast without disclosed traction because the current record cannot establish scale or conversion economics."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Any upside depends on fintech execution and not on ownership of the premium domain."
+    },
+    {
+      "memberId": "C1",
+      "proposalId": "P-C5-2",
+      "vote": "YES",
+      "rationale": "The domain provides negligible outcome signal and should be treated as an option rather than evidence of billion-dollar potential."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "The proposal correctly distinguishes a real fintech operation from the much less likely outcome of becoming a billion-dollar unicorn."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C1-2",
+      "vote": "YES",
+      "rationale": "Verified scaling, economics, regulatory completion, and institutional distribution are appropriate prerequisites for a conditional positive view."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "The available evidence does not support a defensible forecast of billion-dollar scale, so the operational base case should remain no forecastable outcome."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C2-2",
+      "vote": "YES",
+      "rationale": "Measurable scale milestones and unit economics net of payment, compliance, and liquidity costs are necessary to establish credible upside."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Unverified traction combined with an approximately 1% lifetime unicorn base rate warrants rejecting the present unicorn claim."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C3-2",
+      "vote": "YES",
+      "rationale": "Primary-source validation of partnerships, volume, revenue, and institutional funding would provide a reasonable basis for conditional reconsideration."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "The market may be plausible, but insufficient customer and unit-economic evidence prevents a current unicorn verdict."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C4-2",
+      "vote": "YES",
+      "rationale": "Forecasting unicorn status without disclosed traction would overstate what the evidence can support."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Any upside depends on successful fintech execution and not on ownership of the premium domain."
+    },
+    {
+      "memberId": "C2",
+      "proposalId": "P-C5-2",
+      "vote": "YES",
+      "rationale": "The domain may be a useful low-cost option, but it supplies no meaningful evidence that the company will achieve a billion-dollar valuation."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "The company appears real, but the evidence and base rate support treating a unicorn outcome as unlikely."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C1-2",
+      "vote": "YES",
+      "rationale": "Verified scaling, economics, regulatory completion, and distribution are necessary safeguards before assigning a positive unicorn case."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "The available verifiable evidence does not support a defensible forecast that the company will reach billion-dollar status."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C2-2",
+      "vote": "YES",
+      "rationale": "Measurable scale and durable unit economics after payment, compliance, and liquidity costs are essential to the upside thesis."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Absent verified traction, the claim fails both the evidence threshold and the approximately one-percent-or-lower base-rate test."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C3-2",
+      "vote": "YES",
+      "rationale": "Primary-source validation of partnerships, volume, revenue, and institutional funding is an appropriate condition for revisiting the claim."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "The market may be monetizable, but the current record is too thin to support an unconditional unicorn verdict."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C4-2",
+      "vote": "YES",
+      "rationale": "Forecasting unicorn status without disclosed traction would convert unresolved execution and security risks into unjustified certainty."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Any upside depends on fintech execution and verified scale rather than ownership of a premium domain."
+    },
+    {
+      "memberId": "C3",
+      "proposalId": "P-C5-2",
+      "vote": "YES",
+      "rationale": "The domain provides negligible predictive signal and should be treated as an incidental option rather than evidence of outcome."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "The company appears real, but the evidence supports an unlikely rather than established unicorn outcome."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C1-2",
+      "vote": "YES",
+      "rationale": "Verified scaling, economics, regulatory completion, and distribution are necessary conditions for a defensible positive forecast."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Available verifiable evidence does not support forecasting billion-dollar status."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C2-2",
+      "vote": "YES",
+      "rationale": "Measurable scale and unit economics are essential to test whether the business can support unicorn valuation."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Absent verified traction, the low base rate and evidence gaps warrant rejecting the present unicorn claim."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C3-2",
+      "vote": "YES",
+      "rationale": "Primary-source validation of partnerships, volume, revenue, and institutional funding would be appropriate before considering a conditional yes."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "The market opportunity is plausible, but current customer and unit-economic evidence is too thin for a unicorn verdict."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C4-2",
+      "vote": "YES",
+      "rationale": "Unicorn status should not be forecast without disclosed traction that resolves the current uncertainty."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Any upside depends on fintech execution and cannot reasonably be attributed to ownership of the domain."
+    },
+    {
+      "memberId": "C4",
+      "proposalId": "P-C5-2",
+      "vote": "YES",
+      "rationale": "The domain offers negligible outcome signal and should be treated as an option rather than evidence of billion-dollar potential."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C1-1",
+      "vote": "YES",
+      "rationale": "The company appears real, but the evidence and base rate make a billion-dollar outcome unlikely today."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C1-2",
+      "vote": "YES",
+      "rationale": "A conditional positive case is appropriate only if primary evidence verifies scale, economics, regulation, and distribution."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C2-1",
+      "vote": "YES",
+      "rationale": "Current verifiable evidence cannot support a defensible forecast that the company will become a unicorn."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C2-2",
+      "vote": "YES",
+      "rationale": "Measurable scale and unit economics are necessary to distinguish genuine upside from nominal payment volume."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C3-1",
+      "vote": "YES",
+      "rationale": "Unverified traction combined with an approximately one-percent base rate warrants rejecting the present unicorn claim."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C3-2",
+      "vote": "YES",
+      "rationale": "Primary-source validation of partnerships, volume, revenue, and institutional funding would materially improve the upside case."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C4-1",
+      "vote": "YES",
+      "rationale": "The market and operating product create a plausible pathway, but insufficient disclosures prevent a current unicorn verdict."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C4-2",
+      "vote": "YES",
+      "rationale": "Unicorn forecasting should wait for disclosed traction rather than infer outcomes from legitimacy or a premium domain."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C5-1",
+      "vote": "YES",
+      "rationale": "Any upside depends on fintech execution and compounding distribution, while domain ownership contributes negligible predictive signal."
+    },
+    {
+      "memberId": "C5",
+      "proposalId": "P-C5-2",
+      "vote": "YES",
+      "rationale": "The domain is at most an inexpensive strategic option and provides no reliable evidence of business scale or outcome."
+    }
+  ],
+  "reconciliationRounds": [],
+  "status": "CONSENSUS",
+  "acceptedProposalIds": [
+    "P-C1-1",
+    "P-C1-2",
+    "P-C2-1",
+    "P-C2-2",
+    "P-C3-1",
+    "P-C3-2",
+    "P-C4-1",
+    "P-C4-2",
+    "P-C5-1",
+    "P-C5-2"
+  ],
+  "report": "COUNCIL RECORD - run council-ms90jc9c-501f2888\nQuestion: will https://www.lorum.com/ become a $billion unicorn?\nStatus: CONSENSUS\n\nPROCEDURAL RECORD\nChairman: procedural only, non-voting, no research and no substantive proposal authored.\nSeats (all model openai/gpt-5.6-luna, all attempt 1, zero replacements): C1 Atlas (systems coherence and long-term architecture), C2 Forge (pragmatic delivery, simplicity, operational cost), C3 Cassandra (adversarial risk, failure modes, security), C4 Hearth (human, developer, product impact), C5 Horizon (innovation, optionality, future leverage).\nPhase 1 member-research: 5 of 5 member tasks returned; each dispatched exactly two council-researcher tasks on anthropic/claude-sonnet-5 within the 180s research timeout, producing 10 research records (2 per seat) inside the 3-query / 5-source limit. No timeout, no stalled seat, no replacement.\nPhase 2 proposal freeze: 10 unique proposals frozen, two per seat (P-C1-1, P-C1-2, P-C2-1, P-C2-2, P-C3-1, P-C3-2, P-C4-1, P-C4-2, P-C5-1, P-C5-2). C1 Atlas's fallback proposal was not needed.\nPhase 3 alignment: 5 of 5 seats sponsored their own proposal, declared alignments, filed a readiness statement and returned readyToVote=true. Zero proposal conflicts were declared at any severity. Eight direct challenges were filed (C1 to C2, C2 to C4 and C5, C3 to C1, C4 to C3 and C5, C5 to C2 and C4).\nPhase 3a alignment-debate: because direct challenges existed, one fresh response round ran before any ballot. All 5 seats answered the challenges aimed at them in the challengers' own terms. Substantive movement: C2 Forge conceded to C1 and C5 that a directional low prior is legitimate and narrowed \"not forecastable\" to mean no defensible calibrated positive probability; C3 Cassandra conceded to C4 that it does not eliminate the execution pathway, only refuses to treat it as a present forecast; C4 Hearth conceded to C2 that market potential alone cannot justify billion-dollar scale; C5 Horizon conceded to C2 that optionality needs explicit gates and to C4 that the domain itself carries negligible signal; C1 Atlas accepted C3's requirement of a convergent primary-source stack.\nPhase 4 voting: fresh voting participants per seat; 50 ballots cast (5 seats x 10 proposals), exactly one YES or NO per member per proposal. Strict majority threshold floor(5/2)+1 = 3. Every proposal carried 5-0. All 10 proposals accepted.\nPhase 5 reconciliation: not run, because no accepted proposal carried a declared conflict. No conflict edge exists between any two accepted proposals.\nPhase 6 replacements: none used; no seat exhausted attempts.\nCheckpoints were written after roster confirmation, the member fanout, the proposal freeze, alignment, and the ballot.\n\nSUBSTANTIVE OUTCOME\nThe council answers NO on the present evidence, with a preserved conditional path. The premise's implicit framing was corrected by research: lorum.com is not a lorem-ipsum placeholder or parked domain but an operating business-to-business fintech infrastructure company (multi-currency and correspondent clearing, segregated client accounts, FX, treasury, developer API, roughly 30 markets), rebranded from Fuse, founded around 2023, reportedly 51-200 staff, with one named customer and a self-reported United States national trust bank charter filing.\nThe accepted set converges on two compatible holdings. First, the negative base case (P-C1-1, P-C2-1, P-C3-1, P-C4-2, P-C5-2): revenue, ARR, investors, valuation, transaction volume, customer count, traffic, licensing and charter outcome are all unverified; the only third-party valuation signals found were aggregator figures around $26M-$40M with a reported $6.6M seed; independent user or developer validation is effectively absent; and the venture-backed unicorn conversion base rate is roughly 1%-1.3% lifetime. Research also found no case of a premium domain alone producing a $1B business, so the domain carries negligible predictive signal. Second, the conditional upside (P-C1-2, P-C2-2, P-C3-2, P-C4-1, P-C5-1): a $1B outcome is not impossible and would become defensible only on primary-source verification of rapidly growing transaction volume, material recurring revenue, durable unit economics net of payment, compliance and liquidity costs, completed regulatory authorization, declining customer concentration, and institutional financing plus distribution.\nRecorded dissent, which does not alter the accepted set: C2 Forge disputes the lorem-ipsum framing of the question as a category mismatch and rejects any YES resting on market size alone; C3 Cassandra disputes any inference from domain age, polished pages, API docs or clean reputation scans, and equally rejects any allegation of fraud, which the evidence does not support; C4 Hearth and C5 Horizon dissent from any unconditional NO that treats thin public disclosure as proof of weak underlying performance. All seats agree the verdict is evidence-limited rather than a claim that the business is not viable.\nConfidence is medium for C1, C2 and C3, and low for C4 and C5, constrained by self-reported company claims, unverified aggregator records, uncertain entity attribution of the frozen URL, and two rate-limited researcher searches at seat C5."
+}

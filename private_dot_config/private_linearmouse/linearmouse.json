@@ -1,5 +1,5 @@
 {
-  "$schema" : "https:\/\/schema.linearmouse.app\/0.10.1",
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.11.3",
   "schemes" : [
     {
       "if" : {
@@ -79,11 +79,25 @@
           "vendorID" : "0x46d"
         }
       },
+      "pointer" : {
+        "acceleration" : 7
+      },
       "scrolling" : {
         "acceleration" : {
-          "vertical" : 1
+          "vertical" : 0.55
         },
-        "reverse" : true
+        "distance" : {
+          "vertical" : "auto"
+        },
+        "reverse" : true,
+        "smoothed" : {
+          "vertical" : {
+            "enabled" : false
+          }
+        },
+        "speed" : {
+          "vertical" : 0
+        }
       }
     },
     {

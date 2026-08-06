@@ -201,7 +201,7 @@ function parseYamlListValue(value: string): string[] {
 	const inline = trimmed.match(/^\[(.*)\]$/)?.[1];
 	const values = inline === undefined ? [trimmed] : inline.split(",");
 	return values
-		.map((item) => item.trim().replace(/^['\"]|['\"]$/g, ""))
+		.map((item) => item.trim().replace(/^['"]|['"]$/g, ""))
 		.filter(Boolean);
 }
 
@@ -241,7 +241,9 @@ function parseSkillFrontmatterList(
 function readSkillSafetyContract(filePath: string): SkillSafetyContract {
 	try {
 		const content = readFileSync(filePath, "utf8");
-		const frontmatter = content.match(/^---\s*\n([\s\S]*?)\n---(?:\s*\n|$)/)?.[1];
+		const frontmatter = content.match(
+			/^---\s*\n([\s\S]*?)\n---(?:\s*\n|$)/,
+		)?.[1];
 		if (!frontmatter) {
 			return { explicitInvocationGrants: [], neverGrants: [] };
 		}
@@ -369,7 +371,14 @@ function classifyBash(command: string): Risk | undefined {
 			/\b(delete|remove|erase|wipe|purge)\b/i,
 		);
 	}
-	if (/\b(truncate|shred)\b|(^|[^<])>\s*[^&\s]/i.test(normalized)) {
+	const overwriteScan = normalized.replace(
+		/(?:\d*|&)?>>?\s*(?:"\/dev\/null"|'\/dev\/null'|\/dev\/null)(?=$|[\s;&|)])/g,
+		"",
+	);
+	if (
+		/\b(truncate|shred)\b/i.test(normalized) ||
+		/(^|[^<])>\s*[^&\s]/i.test(overwriteScan)
+	) {
 		return classRisk(
 			"Overwrite or erase file contents",
 			command,
@@ -733,9 +742,9 @@ function classifyMcpMutation(input: Record<string, unknown>): Risk | undefined {
 		)
 	)
 		return undefined;
-		return {
-			action: `Call mutating MCP tool ${tool}`,
-			reason: "The call may modify external service state.",
+	return {
+		action: `Call mutating MCP tool ${tool}`,
+		reason: "The call may modify external service state.",
 		keywords:
 			/\b(create|update|delete|remove|send|post|write|save|comment|resolve|archive|invite|assign|link|external|linear|slack|notion|grafana)\b/i,
 		capabilities: ["external-service.write"],
