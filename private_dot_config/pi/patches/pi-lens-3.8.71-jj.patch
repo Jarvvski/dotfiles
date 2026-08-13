@@ -1,74 +1,162 @@
---- a/dist/index.js
-+++ b/dist/index.js
-@@ -3478,15 +3478,8 @@
-   }
-   return ids;
+diff -ruN a/dist/clients/console-guard-install.js b/dist/clients/console-guard-install.js
+--- /dev/null	1970-01-01 01:00:00
++++ b/dist/clients/console-guard-install.js	2026-08-15 10:12:29
+@@ -0,0 +1,3 @@
++import { installConsoleGuard } from "./extension-log.js";
++
++installConsoleGuard();
+diff -ruN a/dist/clients/dispatch/dispatcher.js b/dist/clients/dispatch/dispatcher.js
+--- a/dist/clients/dispatch/dispatcher.js	2026-08-15 10:11:02
++++ b/dist/clients/dispatch/dispatcher.js	2026-08-15 10:12:51
+@@ -13,6 +13,7 @@
+  * - OutputSemantic: How to display (blocking, warning, silent, etc.)
+  * - BaselineStore: Track pre-existing issues for delta mode
+  */
++import "../console-guard-install.js";
+ import * as fs from "node:fs";
+ import * as path from "node:path";
+ import { recordRunner } from "../widget-state.js";
+@@ -33,6 +34,7 @@
+ import { resolveRunnerPath } from "./runner-context.js";
+ import { getToolProfile } from "./tool-profile.js";
+ import { formatDiagnostics } from "./utils/format-utils.js";
++import { logExtension } from "../extension-log.js";
+ // --- Runner Registry ---
+ export class RunnerRegistry {
+     runners = new Map();
+@@ -140,7 +142,11 @@
+             return checkToolAvailability(command, facts);
+         },
+         log(message) {
+-            console.error(`[dispatch] ${message}`);
++            logExtension({
++                subsystem: "dispatch",
++                message,
++                metadata: { filePath: normalizedFilePath, kind },
++            });
+         },
+     };
  }
--async function fetchUntrackedIgnoredIds(cwd) {
--  try {
--    const result = await safeSpawnAsync("git", ["ls-files", "--others", "--ignored", "--exclude-standard"], { cwd, timeout: 1e4, resourceLabel: "git-tracked-ignore" });
--    if (result.error || result.status !== 0)
--      return void 0;
--    return parseUntrackedIgnoredOutput(result.stdout, cwd);
--  } catch {
--    return void 0;
--  }
-+async function fetchUntrackedIgnoredIds(_cwd) {
-+  return void 0;
- }
- function collectUntrackedIgnoredIds(cwd) {
-   const key2 = normalizeMapKey(cwd);
-@@ -3514,10 +3507,10 @@
- }
- async function fetchTrackedFiles(cwd) {
-   try {
--    const result = await safeSpawnAsync("git", ["ls-files"], {
-+    const result = await safeSpawnAsync("jj", ["file", "list"], {
-       cwd,
-       timeout: 1e4,
--      resourceLabel: "git-tracked-ignore"
-+      resourceLabel: "jj-tracked-files"
-     });
-     if (result.error || result.status !== 0)
-       return void 0;
-@@ -3802,7 +3795,7 @@
-   const fallback = path11.resolve(startDir);
-   let current = fallback;
-   while (true) {
--    if (fs6.existsSync(path11.join(current, ".git")))
-+    if (fs6.existsSync(path11.join(current, ".jj")) || fs6.existsSync(path11.join(current, ".git")))
-       return current;
-     const parent = path11.dirname(current);
-     if (parent === current)
-@@ -27976,10 +27969,10 @@
- import { execSync } from "node:child_process";
- import * as fs94 from "node:fs";
- import * as path134 from "node:path";
--function isInsideGitRepo(startDir) {
-+function isInsideJjRepo(startDir) {
-   let dir = path134.resolve(startDir);
-   while (true) {
--    if (fs94.existsSync(path134.join(dir, ".git"))) {
-+    if (fs94.existsSync(path134.join(dir, ".jj"))) {
-       return true;
-     }
-     const parent = path134.dirname(dir);
-@@ -27990,11 +27983,11 @@
-   return false;
- }
- function getCurrentCommit() {
--  if (!isInsideGitRepo(process.cwd())) {
-+  if (!isInsideJjRepo(process.cwd())) {
-     return "unknown";
-   }
-   try {
--    return execSync("git rev-parse --short HEAD", {
-+    return execSync("jj log -r @ --no-graph -T 'commit_id.short()'", {
-       encoding: "utf-8",
-       timeout: 5e3
-     }).trim();
---- a/dist/clients/git-tracked-ignore.js
-+++ b/dist/clients/git-tracked-ignore.js
+diff -ruN a/dist/clients/extension-log.js b/dist/clients/extension-log.js
+--- /dev/null	1970-01-01 01:00:00
++++ b/dist/clients/extension-log.js	2026-08-15 10:11:25
+@@ -0,0 +1,113 @@
++import * as path from "node:path";
++import { isTestMode } from "./env-utils.js";
++import { getGlobalPiLensDir } from "./file-utils.js";
++import { createNdjsonLogger } from "./ndjson-logger.js";
++
++export const EXTENSION_LOG_FILE = path.join(getGlobalPiLensDir(), "extension.log");
++
++const configuredMaxSizeMb = Number.parseFloat(
++    process.env.PI_LENS_MAX_LOG_SIZE_MB ?? "10",
++);
++const maxSizeMb =
++    Number.isFinite(configuredMaxSizeMb) && configuredMaxSizeMb > 0
++        ? configuredMaxSizeMb
++        : 10;
++const writer = createNdjsonLogger({
++    filePath: EXTENSION_LOG_FILE,
++    maxBytes: maxSizeMb * 1024 * 1024,
++});
++
++export function logExtension(entry) {
++    if (isTestMode())
++        return;
++    writer.log({
++        ts: new Date().toISOString(),
++        pid: process.pid,
++        level: entry.level ?? "error",
++        subsystem: entry.subsystem,
++        message: entry.message,
++        ...(entry.metadata ? { metadata: entry.metadata } : {}),
++    });
++}
++
++export function createSubsystemLogger(subsystem, defaultLevel = "debug") {
++    const at = (level) => (message, metadata) => {
++        logExtension({ subsystem, message, level, metadata });
++    };
++    const logger = at(defaultLevel);
++    logger.error = at("error");
++    logger.warn = at("warn");
++    logger.debug = at("debug");
++    return logger;
++}
++
++export function noopSubsystemLogger() {
++    const noop = () => { };
++    noop.error = () => { };
++    noop.warn = () => { };
++    noop.debug = () => { };
++    return noop;
++}
++
++export function getExtensionLogPath() {
++    return EXTENSION_LOG_FILE;
++}
++
++export function flushExtensionLog() {
++    return writer.flush();
++}
++
++export function flushExtensionLogSync() {
++    writer.flushSync();
++}
++
++const CONSOLE_METHODS = [
++    "log",
++    "info",
++    "warn",
++    "error",
++    "debug",
++    "trace",
++    "dir",
++];
++let consoleGuardInstalled = false;
++
++function formatConsoleArgs(args) {
++    return args
++        .map((arg) => {
++        if (typeof arg === "string")
++            return arg;
++        if (arg instanceof Error)
++            return arg.stack ?? arg.message;
++        try {
++            return JSON.stringify(arg) ?? String(arg);
++        }
++        catch {
++            return String(arg);
++        }
++    })
++        .join(" ");
++}
++
++export function installConsoleGuard() {
++    if (consoleGuardInstalled)
++        return false;
++    if (isTestMode())
++        return false;
++    if (process.env.PI_LENS_CONSOLE_GUARD === "0")
++        return false;
++    consoleGuardInstalled = true;
++    for (const method of CONSOLE_METHODS) {
++        if (typeof console[method] !== "function")
++            continue;
++        console[method] = (...args) => {
++            logExtension({
++                subsystem: "console",
++                level: method === "warn" ? "warn" : method === "error" ? "error" : "debug",
++                message: formatConsoleArgs(args),
++                metadata: { method },
++            });
++        };
++    }
++    return true;
++}
+diff -ruN a/dist/clients/git-tracked-ignore.js b/dist/clients/git-tracked-ignore.js
+--- a/dist/clients/git-tracked-ignore.js	2026-08-15 10:11:03
++++ b/dist/clients/git-tracked-ignore.js	2026-07-21 12:02:14
 @@ -60,16 +60,8 @@
      }
      return ids;
@@ -101,8 +189,9 @@
          });
          if (result.error || result.status !== 0)
              return undefined;
---- a/dist/clients/metrics-history.js
-+++ b/dist/clients/metrics-history.js
+diff -ruN a/dist/clients/metrics-history.js b/dist/clients/metrics-history.js
+--- a/dist/clients/metrics-history.js	2026-08-15 10:11:03
++++ b/dist/clients/metrics-history.js	2026-07-21 12:02:14
 @@ -17,10 +17,10 @@
  /**
   * Check whether cwd is inside a Git worktree.
@@ -134,3 +223,197 @@
              encoding: "utf-8",
              timeout: 5000,
          }).trim();
+diff -ruN a/dist/index.js b/dist/index.js
+--- a/dist/index.js	2026-08-15 10:11:03
++++ b/dist/index.js	2026-08-15 10:12:03
+@@ -1,4 +1,110 @@
+ import { createRequire as __pilensCreateRequire } from "node:module"; const require = __pilensCreateRequire(import.meta.url);
++import * as __pilensExtensionFs from "node:fs";
++import * as __pilensExtensionOs from "node:os";
++import * as __pilensExtensionPath from "node:path";
++
++const __pilensExtensionLogDir = process.env.PI_LENS_HOME?.trim() || __pilensExtensionPath.join(__pilensExtensionOs.homedir(), ".pi-lens");
++const __pilensExtensionLogFile = __pilensExtensionPath.join(__pilensExtensionLogDir, "extension.log");
++const __pilensConfiguredMaxLogSizeMb = Number.parseFloat(process.env.PI_LENS_MAX_LOG_SIZE_MB ?? "10");
++const __pilensMaxExtensionLogBytes = (Number.isFinite(__pilensConfiguredMaxLogSizeMb) && __pilensConfiguredMaxLogSizeMb > 0 ? __pilensConfiguredMaxLogSizeMb : 10) * 1024 * 1024;
++const __pilensExtensionLogQueue = [];
++let __pilensExtensionLogDrainPromise = null;
++let __pilensExtensionLogDirReady = false;
++
++function __pilensEnsureExtensionLogDir() {
++  if (__pilensExtensionLogDirReady)
++    return;
++  __pilensExtensionFs.mkdirSync(__pilensExtensionLogDir, { recursive: true });
++  __pilensExtensionLogDirReady = true;
++}
++function __pilensRotateExtensionLog() {
++  try {
++    if (__pilensExtensionFs.statSync(__pilensExtensionLogFile).size < __pilensMaxExtensionLogBytes)
++      return;
++    const backup = `${__pilensExtensionLogFile}.1`;
++    __pilensExtensionFs.rmSync(backup, { force: true });
++    __pilensExtensionFs.renameSync(__pilensExtensionLogFile, backup);
++  } catch {
++  }
++}
++async function __pilensDrainExtensionLogLoop() {
++  while (__pilensExtensionLogQueue.length > 0) {
++    const line = __pilensExtensionLogQueue[0];
++    try {
++      __pilensEnsureExtensionLogDir();
++      __pilensRotateExtensionLog();
++      await __pilensExtensionFs.promises.appendFile(__pilensExtensionLogFile, line);
++    } catch {
++    }
++    __pilensExtensionLogQueue.shift();
++  }
++}
++function __pilensDrainExtensionLog() {
++  if (!__pilensExtensionLogDrainPromise) {
++    __pilensExtensionLogDrainPromise = __pilensDrainExtensionLogLoop().finally(() => {
++      __pilensExtensionLogDrainPromise = null;
++      if (__pilensExtensionLogQueue.length > 0)
++        void __pilensDrainExtensionLog();
++    });
++  }
++  return __pilensExtensionLogDrainPromise;
++}
++function __pilensFlushExtensionLogSync() {
++  while (__pilensExtensionLogQueue.length > 0) {
++    const line = __pilensExtensionLogQueue.shift();
++    try {
++      __pilensEnsureExtensionLogDir();
++      __pilensRotateExtensionLog();
++      __pilensExtensionFs.appendFileSync(__pilensExtensionLogFile, line);
++    } catch {
++    }
++  }
++}
++function __pilensLogExtension(entry) {
++  if (process.env.PI_LENS_TEST_MODE === "1" || process.env.VITEST && process.env.PI_LENS_TEST_MODE !== "0")
++    return;
++  __pilensExtensionLogQueue.push(`${JSON.stringify({
++    ts: (/* @__PURE__ */ new Date()).toISOString(),
++    pid: process.pid,
++    level: entry.level ?? "error",
++    subsystem: entry.subsystem,
++    message: entry.message,
++    ...entry.metadata ? { metadata: entry.metadata } : {}
++  })}\n`);
++  void __pilensDrainExtensionLog();
++}
++function __pilensFormatConsoleArgs(args) {
++  return args.map((arg) => {
++    if (typeof arg === "string")
++      return arg;
++    if (arg instanceof Error)
++      return arg.stack ?? arg.message;
++    try {
++      return JSON.stringify(arg) ?? String(arg);
++    } catch {
++      return String(arg);
++    }
++  }).join(" ");
++}
++function __pilensInstallConsoleGuard() {
++  if (process.env.PI_LENS_TEST_MODE === "1" || process.env.VITEST && process.env.PI_LENS_TEST_MODE !== "0" || process.env.PI_LENS_CONSOLE_GUARD === "0")
++    return;
++  for (const method of ["log", "info", "warn", "error", "debug", "trace", "dir"]) {
++    if (typeof console[method] !== "function")
++      continue;
++    console[method] = (...args) => {
++      __pilensLogExtension({
++        subsystem: "console",
++        level: method === "warn" ? "warn" : method === "error" ? "error" : "debug",
++        message: __pilensFormatConsoleArgs(args),
++        metadata: { method }
++      });
++    };
++  }
++}
++process.on("exit", __pilensFlushExtensionLogSync);
++__pilensInstallConsoleGuard();
++
+ var __create = Object.create;
+ var __defProp = Object.defineProperty;
+ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+@@ -3478,15 +3584,8 @@
+   }
+   return ids;
+ }
+-async function fetchUntrackedIgnoredIds(cwd) {
+-  try {
+-    const result = await safeSpawnAsync("git", ["ls-files", "--others", "--ignored", "--exclude-standard"], { cwd, timeout: 1e4, resourceLabel: "git-tracked-ignore" });
+-    if (result.error || result.status !== 0)
+-      return void 0;
+-    return parseUntrackedIgnoredOutput(result.stdout, cwd);
+-  } catch {
+-    return void 0;
+-  }
++async function fetchUntrackedIgnoredIds(_cwd) {
++  return void 0;
+ }
+ function collectUntrackedIgnoredIds(cwd) {
+   const key2 = normalizeMapKey(cwd);
+@@ -3514,10 +3613,10 @@
+ }
+ async function fetchTrackedFiles(cwd) {
+   try {
+-    const result = await safeSpawnAsync("git", ["ls-files"], {
++    const result = await safeSpawnAsync("jj", ["file", "list"], {
+       cwd,
+       timeout: 1e4,
+-      resourceLabel: "git-tracked-ignore"
++      resourceLabel: "jj-tracked-files"
+     });
+     if (result.error || result.status !== 0)
+       return void 0;
+@@ -3802,7 +3901,7 @@
+   const fallback = path11.resolve(startDir);
+   let current = fallback;
+   while (true) {
+-    if (fs6.existsSync(path11.join(current, ".git")))
++    if (fs6.existsSync(path11.join(current, ".jj")) || fs6.existsSync(path11.join(current, ".git")))
+       return current;
+     const parent = path11.dirname(current);
+     if (parent === current)
+@@ -27976,10 +28075,10 @@
+ import { execSync } from "node:child_process";
+ import * as fs94 from "node:fs";
+ import * as path134 from "node:path";
+-function isInsideGitRepo(startDir) {
++function isInsideJjRepo(startDir) {
+   let dir = path134.resolve(startDir);
+   while (true) {
+-    if (fs94.existsSync(path134.join(dir, ".git"))) {
++    if (fs94.existsSync(path134.join(dir, ".jj"))) {
+       return true;
+     }
+     const parent = path134.dirname(dir);
+@@ -27990,11 +28089,11 @@
+   return false;
+ }
+ function getCurrentCommit() {
+-  if (!isInsideGitRepo(process.cwd())) {
++  if (!isInsideJjRepo(process.cwd())) {
+     return "unknown";
+   }
+   try {
+-    return execSync("git rev-parse --short HEAD", {
++    return execSync("jj log -r @ --no-graph -T 'commit_id.short()'", {
+       encoding: "utf-8",
+       timeout: 5e3
+     }).trim();
+@@ -39060,7 +39159,11 @@
+       return checkToolAvailability(command, facts);
+     },
+     log(message) {
+-      console.error(`[dispatch] ${message}`);
++      __pilensLogExtension({
++        subsystem: "dispatch",
++        message,
++        metadata: { filePath: normalizedFilePath, kind }
++      });
+     }
+   };
+ }

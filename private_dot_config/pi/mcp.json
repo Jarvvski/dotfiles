@@ -9,7 +9,7 @@
     "linear": {
       "url": "https://mcp.linear.app/mcp",
       "auth": "oauth",
-      "lifecycle": "keep-alive"
+      "lifecycle": "lazy"
     },
     "slack": {
       "url": "https://mcp.slack.com/mcp",
@@ -18,12 +18,12 @@
         "clientId": "1601185624273.8899143856786",
         "redirectUri": "http://localhost:3118/callback"
       },
-      "lifecycle": "keep-alive"
+      "lifecycle": "lazy"
     },
     "notion": {
       "url": "https://mcp.notion.com/mcp",
       "auth": "oauth",
-      "lifecycle": "keep-alive"
+      "lifecycle": "lazy"
     },
     "grafana": {
       "command": "/bin/sh",
@@ -31,7 +31,12 @@
         "-c",
         "GRAFANA_URL=$(jq -r '.mcpServers.grafana.env.GRAFANA_URL // empty' \"$HOME/.claude.json\"); GRAFANA_SERVICE_ACCOUNT_TOKEN=$(jq -r '.mcpServers.grafana.env.GRAFANA_SERVICE_ACCOUNT_TOKEN // empty' \"$HOME/.claude.json\"); export GRAFANA_URL GRAFANA_SERVICE_ACCOUNT_TOKEN; exec uvx mcp-grafana"
       ],
-      "lifecycle": "keep-alive"
+      "lifecycle": "lazy"
+    },
+    "posthog": {
+      "url": "https://mcp.posthog.com/mcp",
+      "auth": "oauth",
+      "lifecycle": "lazy"
     }
   }
 }

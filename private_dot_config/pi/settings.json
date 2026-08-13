@@ -1,7 +1,8 @@
 {
-  "lastChangelogVersion": "0.83.0",
+  "lastChangelogVersion": "0.84.2",
   "theme": "tokyo-night",
   "quietStartup": true,
+  "tuiMode": "fullscreen",
   "terminal": {
     "showImages": true,
     "imageWidthCells": 60
@@ -11,8 +12,8 @@
     "blockImages": false
   },
   "defaultProvider": "openai",
-  "defaultModel": "gpt-5.6-luna",
-  "defaultThinkingLevel": "high",
+  "defaultModel": "gpt-5.6-sol",
+  "defaultThinkingLevel": "xhigh",
   "compaction": {
     "enabled": true,
     "reserveTokens": 16384,
@@ -43,6 +44,11 @@
           "grep",
           "find",
           "ls",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "intercom"
         ],
         "acceptanceRole": "read-only"
@@ -53,6 +59,11 @@
           "web_search",
           "fetch_content",
           "get_search_content",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "intercom"
         ],
         "acceptanceRole": "read-only"
@@ -63,6 +74,11 @@
           "grep",
           "find",
           "ls",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "intercom"
         ],
         "acceptanceRole": "read-only"
@@ -73,6 +89,11 @@
           "grep",
           "find",
           "ls",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "intercom"
         ],
         "acceptanceRole": "read-only"
@@ -86,6 +107,11 @@
           "web_search",
           "fetch_content",
           "get_search_content",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "intercom"
         ],
         "acceptanceRole": "read-only"
@@ -96,6 +122,11 @@
           "grep",
           "find",
           "ls",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "intercom"
         ],
         "acceptanceRole": "read-only"
@@ -106,6 +137,11 @@
           "grep",
           "find",
           "ls",
+          "mcp:linear/get_issue",
+          "mcp:linear/list_issues",
+          "mcp:linear/get_project",
+          "mcp:linear/list_projects",
+          "mcp:linear/list_comments",
           "contact_supervisor"
         ],
         "acceptanceRole": "read-only"
@@ -137,5 +173,5 @@
     "npm:pi-lens@3.8.71",
     "npm:pi-mcp-adapter@2.11.0"
   ],
-  "hideThinkingBlock": true
+  "hideThinkingBlock": false
 }

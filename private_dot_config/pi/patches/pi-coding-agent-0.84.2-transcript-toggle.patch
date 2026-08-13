@@ -1,0 +1,624 @@
+--- a/node_modules/@earendil-works/pi-tui/dist/tui.js
++++ b/node_modules/@earendil-works/pi-tui/dist/tui.js
+@@ -19,6 +19,74 @@
+  * TUI finds and strips this marker, then positions the hardware cursor there.
+  */
+ export const CURSOR_MARKER = "\x1b_pi:c\x07";
++const MOUSE_TRACKING_ENABLE_SEQUENCE = "\x1b[?1000h\x1b[?1006h";
++const MOUSE_TRACKING_DISABLE_SEQUENCE = "\x1b[?1006l\x1b[?1000l";
++export function parseMouseEvent(data) {
++    const sgrMatch = data.match(/^\x1b\[<(\d+);(\d+);(\d+)([Mm])$/);
++    if (sgrMatch) {
++        const code = Number.parseInt(sgrMatch[1], 10);
++        const col = Number.parseInt(sgrMatch[2], 10);
++        const row = Number.parseInt(sgrMatch[3], 10);
++        const isWheel = (code & 64) !== 0;
++        const isMotion = (code & 32) !== 0;
++        const baseButton = code & 3;
++        const button = isWheel
++            ? baseButton === 0
++                ? "wheel-up"
++                : baseButton === 1
++                    ? "wheel-down"
++                    : "unknown"
++            : baseButton === 0
++                ? "left"
++                : baseButton === 1
++                    ? "middle"
++                    : baseButton === 2
++                        ? "right"
++                        : "unknown";
++        return {
++            action: isWheel ? "scroll" : isMotion ? "motion" : sgrMatch[4] === "m" ? "release" : "press",
++            button,
++            col,
++            row,
++            contentRow: 0,
++            shift: (code & 4) !== 0,
++            alt: (code & 8) !== 0,
++            ctrl: (code & 16) !== 0,
++        };
++    }
++    const legacyMatch = data.match(/^\x1b\[M([\s\S])([\s\S])([\s\S])$/);
++    if (!legacyMatch) {
++        return undefined;
++    }
++    const code = legacyMatch[1].charCodeAt(0) - 32;
++    const col = legacyMatch[2].charCodeAt(0) - 32;
++    const row = legacyMatch[3].charCodeAt(0) - 32;
++    const isWheel = (code & 64) !== 0;
++    const isMotion = (code & 32) !== 0;
++    const baseButton = code & 3;
++    return {
++        action: isWheel ? "scroll" : isMotion ? "motion" : baseButton === 3 ? "release" : "press",
++        button: isWheel
++            ? baseButton === 0
++                ? "wheel-up"
++                : baseButton === 1
++                    ? "wheel-down"
++                    : "unknown"
++            : baseButton === 0
++                ? "left"
++                : baseButton === 1
++                    ? "middle"
++                    : baseButton === 2
++                        ? "right"
++                        : "unknown",
++        col,
++        row,
++        contentRow: 0,
++        shift: (code & 4) !== 0,
++        alt: (code & 8) !== 0,
++        ctrl: (code & 16) !== 0,
++    };
++}
+ export { visibleWidth };
+ /** Parse a SizeValue into absolute value given a reference size */
+ function parseSizeValue(value, referenceSize) {
+@@ -101,6 +169,9 @@
+     terminal;
+     focusedComponent = null;
+     inputListeners = new Set();
++    mouseListeners = new Set();
++    mouseTrackingEnabled = false;
++    started = false;
+     /** Global callback for debug key (Shift+Ctrl+D). Called before input is forwarded to focused component. */
+     onDebug;
+     renderRequested = false;
+@@ -140,6 +211,9 @@
+     get fullRedraws() {
+         return this.fullRedrawCount;
+     }
++    get viewportTop() {
++        return 0;
++    }
+     getShowHardwareCursor() {
+         return this.showHardwareCursor;
+     }
+@@ -434,9 +508,12 @@
+     }
+     start() {
+         this.stopped = false;
++        this.started = true;
+         this.beforeTerminalStart();
+         this.terminal.start((data) => this.handleTerminalInput(data), () => this.requestRender());
+         this.afterTerminalStart();
++        this.mouseTrackingEnabled = false;
++        this.setMouseTrackingEnabled(this.mouseListeners.size > 0);
+         this.terminal.hideCursor();
+         if (this.terminalColorSchemeNotificationsEnabled) {
+             this.terminal.write("\x1b[?2031h");
+@@ -450,6 +527,25 @@
+             this.inputListeners.delete(listener);
+         };
+     }
++    addMouseListener(listener) {
++        this.mouseListeners.add(listener);
++        this.setMouseTrackingEnabled(true);
++        return () => {
++            this.mouseListeners.delete(listener);
++            if (this.mouseListeners.size === 0) {
++                this.setMouseTrackingEnabled(false);
++            }
++        };
++    }
++    setMouseTrackingEnabled(enabled) {
++        if (this.mouseTrackingEnabled === enabled) {
++            return;
++        }
++        this.mouseTrackingEnabled = enabled;
++        if (this.mode === "regular" && this.started && !this.stopped) {
++            this.terminal.write(enabled ? MOUSE_TRACKING_ENABLE_SEQUENCE : MOUSE_TRACKING_DISABLE_SEQUENCE);
++        }
++    }
+     removeInputListener(listener) {
+         this.inputListeners.delete(listener);
+     }
+@@ -478,6 +574,8 @@
+         this.terminal.write("\x1b[16t");
+     }
+     stop(options = {}) {
++        this.setMouseTrackingEnabled(false);
++        this.started = false;
+         this.stopped = true;
+         this.cancelRenderTimer();
+         if (this.terminalColorSchemeNotificationsEnabled) {
+@@ -557,6 +655,19 @@
+         if (this.consumeTerminalColorSchemeReport(data)) {
+             return;
+         }
++        if (this.mouseListeners.size > 0) {
++            const mouseEvent = parseMouseEvent(data);
++            if (mouseEvent) {
++                mouseEvent.contentRow = this.viewportTop + mouseEvent.row - 1;
++                let consumed = false;
++                for (const listener of this.mouseListeners) {
++                    consumed = listener(mouseEvent) === true || consumed;
++                }
++                if (consumed || this.mode === "regular") {
++                    return;
++                }
++            }
++        }
+         if (this.inputListeners.size > 0) {
+             let current = data;
+             for (const listener of this.inputListeners) {
+--- a/node_modules/@earendil-works/pi-tui/dist/tui.d.ts
++++ b/node_modules/@earendil-works/pi-tui/dist/tui.d.ts
+@@ -34,6 +34,23 @@
+     data?: string;
+ } | undefined;
+ export type TuiInputListener = (data: string) => TuiInputListenerResult;
++export type MouseAction = "press" | "release" | "motion" | "scroll";
++export type MouseButton = "left" | "middle" | "right" | "wheel-up" | "wheel-down" | "unknown";
++export interface MouseEvent {
++    action: MouseAction;
++    button: MouseButton;
++    /** One-based terminal column. */
++    col: number;
++    /** One-based terminal row. */
++    row: number;
++    /** Zero-based row in the rendered TUI content buffer. */
++    contentRow: number;
++    shift: boolean;
++    alt: boolean;
++    ctrl: boolean;
++}
++export type MouseListener = (event: MouseEvent) => boolean | void;
++export declare function parseMouseEvent(data: string): MouseEvent | undefined;
+ /**
+  * Interface for components that can receive focus and display a hardware cursor.
+  * When focused, the component should emit CURSOR_MARKER at the cursor position
+@@ -147,6 +164,7 @@
+     terminal: Terminal;
+     onDebug?: () => void;
+     readonly fullRedraws: number;
++    readonly viewportTop: number;
+     addChild(component: Component): void;
+     removeChild(component: Component): void;
+     clear(): void;
+@@ -163,6 +181,7 @@
+     renderNow(force?: boolean): void;
+     requestRender(force?: boolean): void;
+     addInputListener(listener: TuiInputListener): () => void;
++    addMouseListener(listener: MouseListener): () => void;
+     removeInputListener(listener: TuiInputListener): void;
+     onTerminalColorSchemeChange(listener: (scheme: TerminalColorScheme) => void): () => void;
+     setTerminalColorSchemeNotifications(enabled: boolean): void;
+@@ -184,6 +203,9 @@
+     terminal: Terminal;
+     private focusedComponent;
+     private inputListeners;
++    private mouseListeners;
++    private mouseTrackingEnabled;
++    private started;
+     /** Global callback for debug key (Shift+Ctrl+D). Called before input is forwarded to focused component. */
+     onDebug?: () => void;
+     private renderRequested;
+@@ -212,6 +234,7 @@
+     protected beforeTerminalStop(_options: TuiStopOptions): void;
+     protected afterTerminalStop(_options: TuiStopOptions): void;
+     get fullRedraws(): number;
++    get viewportTop(): number;
+     getShowHardwareCursor(): boolean;
+     setShowHardwareCursor(enabled: boolean): void;
+     getClearOnShrink(): boolean;
+@@ -251,6 +274,8 @@
+     invalidate(): void;
+     start(): void;
+     addInputListener(listener: TuiInputListener): () => void;
++    addMouseListener(listener: MouseListener): () => void;
++    private setMouseTrackingEnabled;
+     removeInputListener(listener: TuiInputListener): void;
+     onTerminalColorSchemeChange(listener: (scheme: TerminalColorScheme) => void): () => void;
+     setTerminalColorSchemeNotifications(enabled: boolean): void;
+--- a/node_modules/@earendil-works/pi-tui/dist/index.js
++++ b/node_modules/@earendil-works/pi-tui/dist/index.js
+@@ -34,7 +34,7 @@
+ export { parseOsc11BackgroundColor, parseTerminalColorSchemeReport, } from "./terminal-colors.js";
+ // Terminal image support
+ export { allocateImageId, calculateImageRows, deleteAllKittyImages, deleteKittyImage, detectCapabilities, encodeITerm2, encodeKitty, getCapabilities, getCellDimensions, getGifDimensions, getImageDimensions, getJpegDimensions, getPngDimensions, getWebpDimensions, hyperlink, imageFallback, renderImage, resetCapabilitiesCache, setCapabilities, setCellDimensions, } from "./terminal-image.js";
+-export { Container, CURSOR_MARKER, compositeTuiLine, isFocusable, isViewportTUI, } from "./tui.js";
++export { Container, CURSOR_MARKER, compositeTuiLine, isFocusable, isViewportTUI, parseMouseEvent, } from "./tui.js";
+ export { TuiAltScreen } from "./tui-alt-screen.js";
+ export { TuiMainScreen } from "./tui-main-screen.js";
+ // Utilities
+--- a/node_modules/@earendil-works/pi-tui/dist/index.d.ts
++++ b/node_modules/@earendil-works/pi-tui/dist/index.d.ts
+@@ -24,7 +24,7 @@
+ export { ProcessTerminal, type Terminal } from "./terminal.ts";
+ export { parseOsc11BackgroundColor, parseTerminalColorSchemeReport, type RgbColor, type TerminalColorScheme, } from "./terminal-colors.ts";
+ export { allocateImageId, type CellDimensions, calculateImageRows, deleteAllKittyImages, deleteKittyImage, detectCapabilities, encodeITerm2, encodeKitty, getCapabilities, getCellDimensions, getGifDimensions, getImageDimensions, getJpegDimensions, getPngDimensions, getWebpDimensions, hyperlink, type ImageDimensions, type ImageProtocol, type ImageRenderOptions, imageFallback, renderImage, resetCapabilitiesCache, setCapabilities, setCellDimensions, type TerminalCapabilities, } from "./terminal-image.ts";
+-export { type Component, Container, CURSOR_MARKER, compositeTuiLine, type Focusable, isFocusable, isViewportTUI, type OverlayAnchor, type OverlayHandle, type OverlayMargin, type OverlayOptions, type OverlayUnfocusOptions, type SizeValue, type TUI, type TuiInputListener, type TuiInputListenerResult, type TuiMode, type TuiStopOptions, type ViewportTUI, } from "./tui.ts";
++export { type Component, Container, CURSOR_MARKER, compositeTuiLine, type Focusable, isFocusable, isViewportTUI, type MouseAction, type MouseButton, type MouseEvent, type MouseListener, type OverlayAnchor, type OverlayHandle, type OverlayMargin, type OverlayOptions, type OverlayUnfocusOptions, parseMouseEvent, type SizeValue, type TUI, type TuiInputListener, type TuiInputListenerResult, type TuiMode, type TuiStopOptions, type ViewportTUI, } from "./tui.ts";
+ export { TuiAltScreen, type TuiAltScreenOptions } from "./tui-alt-screen.ts";
+ export { TuiMainScreen, type TuiMainScreenRenderState } from "./tui-main-screen.ts";
+ export { getOsc8LinkAtColumn, sliceByColumn, stripTerminalSequences, truncateToWidth, visibleWidth, wrapTextWithAnsi, } from "./utils.ts";
+--- a/node_modules/@earendil-works/pi-tui/dist/tui-main-screen.js
++++ b/node_modules/@earendil-works/pi-tui/dist/tui-main-screen.js
+@@ -48,6 +48,9 @@
+     hardwareCursorRow = 0;
+     maxLinesRendered = 0;
+     previousViewportTop = 0;
++    get viewportTop() {
++        return this.previousViewportTop;
++    }
+     captureRenderState() {
+         return {
+             previousLines: [...this.previousLines],
+--- a/node_modules/@earendil-works/pi-tui/dist/tui-main-screen.d.ts
++++ b/node_modules/@earendil-works/pi-tui/dist/tui-main-screen.d.ts
+@@ -19,6 +19,7 @@
+     private hardwareCursorRow;
+     private maxLinesRendered;
+     private previousViewportTop;
++    get viewportTop(): number;
+     captureRenderState(): TuiMainScreenRenderState;
+     restoreRenderState(state: TuiMainScreenRenderState): void;
+     protected resetRenderState(): void;
+--- a/dist/modes/interactive/components/tool-execution.js
++++ b/dist/modes/interactive/components/tool-execution.js
+@@ -39,6 +39,7 @@
+         this.builtInToolDefinition = createAllToolDefinitions(cwd)[toolName];
+         this.showImages = options.showImages ?? true;
+         this.imageWidthCells = options.imageWidthCells ?? 60;
++        this.expanded = options.defaultExpanded ?? false;
+         this.ui = ui;
+         this.cwd = cwd;
+         this.addChild(new Spacer(1));
+@@ -167,6 +168,12 @@
+             });
+         }
+     }
++    getExpanded() {
++        return this.expanded;
++    }
++    getToolCallId() {
++        return this.toolCallId;
++    }
+     setExpanded(expanded) {
+         this.expanded = expanded;
+         this.updateDisplay();
+--- a/dist/modes/interactive/components/tool-execution.d.ts
++++ b/dist/modes/interactive/components/tool-execution.d.ts
+@@ -3,6 +3,7 @@
+ export interface ToolExecutionOptions {
+     showImages?: boolean;
+     imageWidthCells?: number;
++    defaultExpanded?: boolean;
+ }
+ export declare class ToolExecutionComponent extends Container {
+     private contentBox;
+@@ -51,6 +52,8 @@
+         isError: boolean;
+     }, isPartial?: boolean): void;
+     private maybeConvertImagesForKitty;
++    getExpanded(): boolean;
++    getToolCallId(): string;
+     setExpanded(expanded: boolean): void;
+     setShowImages(show: boolean): void;
+     setImageWidthCells(width: number): void;
+--- a/dist/modes/interactive/interactive-mode.js
++++ b/dist/modes/interactive/interactive-mode.js
+@@ -270,10 +270,15 @@
+     // Streaming message tracking
+     streamingComponent = undefined;
+     streamingMessage = undefined;
+-    // Tool execution tracking: toolCallId -> component
++    // Tool execution tracking: active toolCallId -> component
+     pendingTools = new Map();
+-    // Tool output expansion state
++    // All currently rendered tool calls, including completed calls.
++    renderedTools = new Map();
++    // Per-call expansion choices for the active session.
++    toolExpansionOverrides = new Map();
++    // Tool output expansion state. Defaults are used until a global action occurs.
+     toolOutputExpanded = false;
++    toolOutputExpansionLocked = false;
+     // Thinking block visibility state
+     hideThinkingBlock = false;
+     outputPad = 1;
+@@ -305,6 +310,8 @@
+     extensionInput = undefined;
+     extensionEditor = undefined;
+     extensionTerminalInputSubscriptions = new Set();
++    mouseListenerUnsubscribe;
++    mousePressedToolCallId;
+     // Extension widgets (components rendered above/below the editor)
+     extensionWidgetsAbove = new Map();
+     extensionWidgetsBelow = new Map();
+@@ -344,6 +351,10 @@
+         this.autoTrustOnReloadCwd = options.autoTrustOnReloadCwd;
+         this.runtimeHost.setBeforeSessionInvalidate(() => {
+             this.resetExtensionUI();
++            this.toolExpansionOverrides.clear();
++            this.renderedTools.clear();
++            this.toolOutputExpanded = false;
++            this.toolOutputExpansionLocked = false;
+         });
+         this.runtimeHost.setRebindSession(async () => {
+             await this.rebindCurrentSession({ renderBeforeBind: true });
+@@ -609,6 +620,7 @@
+         nextUi.start();
+         this.themeController.rebindTui();
+         this.rebindExtensionTerminalInputListeners();
++        this.bindToolMouseListener();
+         if (restoreProgress &&
+             this.settingsManager.getShowTerminalProgress() &&
+             (this.session.isStreaming || this.session.isCompacting)) {
+@@ -672,6 +684,7 @@
+         this.ui.setFocus(this.editor);
+         // Start the UI before initializing extensions so session_start handlers can use interactive dialogs
+         this.ui.start();
++        this.bindToolMouseListener();
+         this.isInitialized = true;
+         await this.themeController.applyFromSettings();
+         // Add header with keybindings from config (unless silenced)
+@@ -1539,6 +1552,7 @@
+         this.streamingComponent = undefined;
+         this.streamingMessage = undefined;
+         this.pendingTools.clear();
++        this.renderedTools.clear();
+         this.renderInitialMessages();
+     }
+     /**
+@@ -1547,6 +1561,31 @@
+     getRegisteredToolDefinition(toolName) {
+         return this.session.getToolDefinition(toolName);
+     }
++    getToolExpandedDefault(toolName, toolCallId) {
++        const override = this.toolExpansionOverrides.get(toolCallId);
++        if (override !== undefined) {
++            return override;
++        }
++        const definition = this.getRegisteredToolDefinition(toolName);
++        if (!this.toolOutputExpansionLocked && definition?.defaultExpanded !== undefined) {
++            return definition.defaultExpanded;
++        }
++        return this.toolOutputExpanded;
++    }
++    createToolExecutionComponent(toolName, toolCallId, args) {
++        const toolDefinition = this.getRegisteredToolDefinition(toolName);
++        const component = new ToolExecutionComponent(toolName, toolCallId, args, {
++            showImages: this.settingsManager.getShowImages(),
++            imageWidthCells: this.settingsManager.getImageWidthCells(),
++            defaultExpanded: this.getToolExpandedDefault(toolName, toolCallId),
++        }, toolDefinition, this.ui, this.sessionManager.getCwd());
++        this.renderedTools.set(toolCallId, component);
++        return component;
++    }
++    bindToolMouseListener() {
++        this.mouseListenerUnsubscribe?.();
++        this.mouseListenerUnsubscribe = this.ui.addMouseListener((event) => this.handleToolMouseEvent(event));
++    }
+     getMarkdownTransformers() {
+         return [this.mermaidMarkdownTransformer, ...this.session.extensionRunner.getMarkdownTransformers()];
+     }
+@@ -1918,6 +1957,8 @@
+             },
+             getToolsExpanded: () => this.toolOutputExpanded,
+             setToolsExpanded: (expanded) => this.setToolsExpanded(expanded),
++            getToolExpanded: (toolCallId) => this.getToolExpanded(toolCallId),
++            setToolExpanded: (toolCallId, expanded) => this.setToolExpanded(toolCallId, expanded),
+         };
+     }
+     /**
+@@ -2583,11 +2624,7 @@
+                     for (const content of this.streamingMessage.content) {
+                         if (content.type === "toolCall") {
+                             if (!this.pendingTools.has(content.id)) {
+-                                const component = new ToolExecutionComponent(content.name, content.id, content.arguments, {
+-                                    showImages: this.settingsManager.getShowImages(),
+-                                    imageWidthCells: this.settingsManager.getImageWidthCells(),
+-                                }, this.getRegisteredToolDefinition(content.name), this.ui, this.sessionManager.getCwd());
+-                                component.setExpanded(this.toolOutputExpanded);
++                                const component = this.createToolExecutionComponent(content.name, content.id, content.arguments);
+                                 this.chatContainer.addChild(component);
+                                 this.pendingTools.set(content.id, component);
+                             }
+@@ -2648,11 +2685,7 @@
+             case "tool_execution_start": {
+                 let component = this.pendingTools.get(event.toolCallId);
+                 if (!component) {
+-                    component = new ToolExecutionComponent(event.toolName, event.toolCallId, event.args, {
+-                        showImages: this.settingsManager.getShowImages(),
+-                        imageWidthCells: this.settingsManager.getImageWidthCells(),
+-                    }, this.getRegisteredToolDefinition(event.toolName), this.ui, this.sessionManager.getCwd());
+-                    component.setExpanded(this.toolOutputExpanded);
++                    component = this.createToolExecutionComponent(event.toolName, event.toolCallId, event.args);
+                     this.chatContainer.addChild(component);
+                     this.pendingTools.set(event.toolCallId, component);
+                 }
+@@ -2933,6 +2966,7 @@
+     }
+     renderSessionItems(items, options = {}) {
+         this.pendingTools.clear();
++        this.renderedTools.clear();
+         const renderedPendingTools = new Map();
+         // Cache-miss notices are not persisted; re-derive them from the full entry
+         // list and re-inject them after the assistant messages that paid for them.
+@@ -2955,11 +2989,7 @@
+                 // Render tool call components
+                 for (const content of message.content) {
+                     if (content.type === "toolCall") {
+-                        const component = new ToolExecutionComponent(content.name, content.id, content.arguments, {
+-                            showImages: this.settingsManager.getShowImages(),
+-                            imageWidthCells: this.settingsManager.getImageWidthCells(),
+-                        }, this.getRegisteredToolDefinition(content.name), this.ui, this.sessionManager.getCwd());
+-                        component.setExpanded(this.toolOutputExpanded);
++                        const component = this.createToolExecutionComponent(content.name, content.id, content.arguments);
+                         this.chatContainer.addChild(component);
+                         if (message.stopReason === "aborted" || message.stopReason === "error") {
+                             let errorMessage;
+@@ -3350,10 +3380,77 @@
+     }
+     toggleToolOutputExpansion() {
+         this.setToolsExpanded(!this.toolOutputExpanded);
++    }
++    getToolExpanded(toolCallId) {
++        const component = this.renderedTools.get(toolCallId);
++        if (component) {
++            return component.getExpanded();
++        }
++        return this.toolExpansionOverrides.get(toolCallId);
++    }
++    setToolExpanded(toolCallId, expanded) {
++        const component = this.renderedTools.get(toolCallId);
++        if (!component) {
++            return false;
++        }
++        this.toolExpansionOverrides.set(toolCallId, expanded);
++        component.setExpanded(expanded);
++        this.ui.requestRender();
++        return true;
++    }
++    getToolComponentAtMouseEvent(event) {
++        if (this.renderer.mode === "fullscreen" && event.row > this.transcriptScrollView.viewportHeight) {
++            return undefined;
++        }
++        const terminalWidth = this.ui.terminal.columns;
++        const width = this.renderer.mode === "fullscreen"
++            ? this.transcriptScrollView.getContentWidth(terminalWidth)
++            : terminalWidth;
++        let row = 0;
++        for (const child of this.documentContainer.children) {
++            if (child === this.chatContainer) {
++                break;
++            }
++            row += child.render(width).length;
++        }
++        for (const child of this.chatContainer.children) {
++            const lines = child.render(width);
++            if (child instanceof ToolExecutionComponent && lines.length > 1 && event.contentRow === row + 1) {
++                return child;
++            }
++            row += lines.length;
++        }
++        return undefined;
++    }
++    handleToolMouseEvent(event) {
++        if (event.button !== "left" || event.shift || event.alt || event.ctrl || this.ui.hasOverlay()) {
++            return false;
++        }
++        if (event.action === "press") {
++            const component = this.getToolComponentAtMouseEvent(event);
++            this.mousePressedToolCallId = component?.getToolCallId();
++            return component !== undefined;
++        }
++        if (event.action === "motion" && this.mousePressedToolCallId) {
++            return true;
++        }
++        if (event.action !== "release") {
++            return false;
++        }
++        const pressedToolCallId = this.mousePressedToolCallId;
++        this.mousePressedToolCallId = undefined;
++        if (!pressedToolCallId) {
++            return false;
++        }
++        const component = this.getToolComponentAtMouseEvent(event);
++        if (component?.getToolCallId() === pressedToolCallId) {
++            this.setToolExpanded(pressedToolCallId, !component.getExpanded());
++        }
++        return true;
+     }
+     setToolsExpanded(expanded) {
+-        if (expanded === this.toolOutputExpanded)
+-            return;
++        this.toolOutputExpansionLocked = true;
++        this.toolExpansionOverrides.clear();
+         this.toolOutputExpanded = expanded;
+         const activeHeader = this.customHeader ?? this.builtInHeader;
+         if (isExpandable(activeHeader)) {
+@@ -4802,6 +4899,10 @@
+             return;
+         }
+         this.resetExtensionUI();
++        this.toolExpansionOverrides.clear();
++        this.renderedTools.clear();
++        this.toolOutputExpanded = false;
++        this.toolOutputExpansionLocked = false;
+         const reloadBox = new Container();
+         const borderColor = (s) => theme.fg("border", s);
+         reloadBox.addChild(new DynamicBorder(borderColor));
+@@ -5423,6 +5524,9 @@
+         this.clearStatusIndicator();
+         this.themeController.disableAutoSync();
+         this.clearExtensionTerminalInputListeners();
++        this.mouseListenerUnsubscribe?.();
++        this.mouseListenerUnsubscribe = undefined;
++        this.mousePressedToolCallId = undefined;
+         this.footer.dispose();
+         this.footerDataProvider.dispose();
+         if (this.unsubscribe) {
+--- a/dist/core/extensions/types.d.ts
++++ b/dist/core/extensions/types.d.ts
+@@ -189,6 +189,10 @@
+     getToolsExpanded(): boolean;
+     /** Set tool output expansion state. */
+     setToolsExpanded(expanded: boolean): void;
++    /** Get the current expansion state for a rendered tool call. */
++    getToolExpanded(toolCallId: string): boolean | undefined;
++    /** Set the expansion state for a rendered tool call. Returns false when not rendered. */
++    setToolExpanded(toolCallId: string, expanded: boolean): boolean;
+ }
+ export interface ContextUsage {
+     /** Estimated context tokens, or null if unknown (e.g. right after compaction, before next LLM response). */
+@@ -358,6 +362,8 @@
+     constrainedSampling?: false | ConstrainedSamplingConfig;
+     /** Controls whether ToolExecutionComponent renders the standard colored shell or the tool renders its own framing. */
+     renderShell?: "default" | "self";
++    /** Initial expansion state before the user invokes the global tool toggle. */
++    defaultExpanded?: boolean;
+     /** Optional compatibility shim to prepare raw tool call arguments before schema validation. Must return an object conforming to TParams. */
+     prepareArguments?: (args: unknown) => Static<TParams>;
+     /**
+--- a/dist/core/extensions/runner.js
++++ b/dist/core/extensions/runner.js
+@@ -116,6 +116,8 @@
+     setTheme: (_theme) => ({ success: false, error: "UI not available" }),
+     getToolsExpanded: () => false,
+     setToolsExpanded: () => { },
++    getToolExpanded: () => undefined,
++    setToolExpanded: () => false,
+ };
+ export class ExtensionRunner {
+     extensions;
+--- a/dist/modes/rpc/rpc-mode.js
++++ b/dist/modes/rpc/rpc-mode.js
+@@ -219,7 +219,15 @@
+             return false;
+         },
+         setToolsExpanded(_expanded) {
++            // Tool expansion not supported in RPC mode - no TUI
++        },
++        getToolExpanded(_toolCallId) {
++            // Tool expansion not supported in RPC mode - no TUI
++            return undefined;
++        },
++        setToolExpanded(_toolCallId, _expanded) {
+             // Tool expansion not supported in RPC mode - no TUI
++            return false;
+         },
+     });
+     runtimeHost.setRebindSession(async () => {

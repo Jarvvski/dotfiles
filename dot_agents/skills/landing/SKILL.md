@@ -14,6 +14,28 @@ metadata:
 
 Skills may declare Safety Guard capabilities in frontmatter. The exact `$land` invocation is an explicit user invocation and grants this skill's declared capabilities for the current landing workflow only.
 
+## Stacked PR mode
+
+Enter stacked PR mode when the request mentions stacked PRs, dependent PRs, `gh stack`, or repeated `$land` operations.
+
+In stacked PR mode:
+
+1. Split the current jj change into one logical layer at a time.
+2. Land each layer with jj: describe the revision, create an `adam/...` bookmark, push it with `jj git push`, and create its PR with `gh pr create` using the previous layer bookmark as `--base`.
+3. Record every PR number in bottom-to-top order.
+4. After all layers have PRs, change to the colocated repository-root workspace. Do not run `gh stack` from a secondary jj workspace.
+5. Link the existing PRs from the root workspace with `GH_REPO=<owner/repo> gh stack link <bottom-pr> <next-pr> ... --open`.
+6. Report the stack number and ordered PR URLs. Never merge.
+
+The editing workspace may be a secondary jj workspace. The colocated root workspace is mandatory for commands such as `gh stack view` that require local Git metadata. In a jj repository, `gh stack link` is the external-tool path for linking already-landed PRs; do not replace the jj workflow with Git staging or local `gh stack init`/`add`/`submit` commands.
+
+Remote-action gate:
+
+- Exact `$land` or explicit user authorization permits bookmark pushes and PR creation.
+- Stack linking is part of that same explicitly requested stacked-PR workflow.
+- This authorization never permits merging, auto-merge, merge queues, or unrelated remote mutations.
+- If authorization is ambiguous, ask before pushing or creating PRs.
+
 ## 0. Prefer repository-specific landing instructions
 
 Before acting, read the repository's instruction files, including applicable `AGENTS.md` and
@@ -94,7 +116,8 @@ REPO=$(jj git remote list | awk '/^origin/ {print $2}' | sed -E 's#.*[:/]([^/]+/
 gh pr create -R "$REPO" --head adam/<slug> --title "<subject line>" --body "<one short paragraph>"
 ```
 
-- PR is ready for review (not draft), base = default branch.
+- PR is ready for review (not draft).
+- In ordinary mode, base the PR on the default branch. In stacked PR mode, base it on the lower layer bookmark.
 - Body: one short paragraph in prose. No templated Summary/Test Plan/Root Cause sections.
 - Finish by reporting the PR URL. Without explicit remote authorization, report the local landing
   result and bookmark name.

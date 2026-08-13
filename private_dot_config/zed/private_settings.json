@@ -66,4 +66,10 @@
       }
     }
   },
+  "context_servers": {
+    "posthog": {
+      "enabled": true,
+      "url": "https://mcp.posthog.com/mcp"
+    }
+  },
 }

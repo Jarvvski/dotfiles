@@ -5,6 +5,10 @@ PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
 PATCH_DIR="$PI_DIR/patches"
 NPM_DIR="$PI_DIR/npm/node_modules"
 
+if [ -z "${NODE_COMPILE_CACHE:-}" ] && [ -z "${NODE_DISABLE_COMPILE_CACHE:-}" ]; then
+  export NODE_COMPILE_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/pi/node-compile-cache"
+fi
+
 apply_patch() {
   package_dir="$1"
   patch_file="$2"
@@ -36,9 +40,10 @@ REAL_PI="$(realpath "$(/opt/homebrew/bin/mise which pi)")"
 PI_PACKAGE_DIR="$(CDPATH= cd -- "$(dirname "$REAL_PI")/.." && pwd)"
 
 apply_patch "$NPM_DIR/pi-subagents" "$PATCH_DIR/pi-subagents-0.35.1-jj.patch" "pi-subagents@0.35.1-jj-v3" ".pi-jj-patched"
-apply_patch "$NPM_DIR/pi-lens" "$PATCH_DIR/pi-lens-3.8.71-jj.patch" "pi-lens@3.8.71-jj-v1" ".pi-jj-patched"
+apply_patch "$NPM_DIR/pi-lens" "$PATCH_DIR/pi-lens-3.8.71-jj.patch" "pi-lens@3.8.71-jj-v2" ".pi-jj-patched"
 apply_patch "$NPM_DIR/pi-subagents" "$PATCH_DIR/pi-subagents-0.35.1-retry.patch" "pi-subagents@0.35.1-retry-v1" ".pi-retry-patched"
-apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.81.1-retry.patch" "pi-coding-agent@0.81.1-retry-v1" ".pi-retry-patched"
-apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.83.0-transcript-toggle.patch" "pi-coding-agent@0.83.0-transcript-toggle-v1" ".pi-transcript-toggle-patched"
+apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.84.2-retry.patch" "pi-coding-agent@0.84.2-retry-v1" ".pi-retry-patched"
+apply_patch "$PI_PACKAGE_DIR" "$PATCH_DIR/pi-coding-agent-0.84.2-transcript-toggle.patch" "pi-coding-agent@0.84.2-transcript-toggle-v1" ".pi-transcript-toggle-patched"
+
 
 exec "$REAL_PI" "$@"

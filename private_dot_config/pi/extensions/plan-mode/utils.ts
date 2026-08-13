@@ -132,8 +132,128 @@ const PLAN_MODE_SAFE_SUBAGENT_ACTIONS = new Set([
 	"watchdog.status",
 ]);
 
+const PLAN_MODE_SUBAGENT_RUN_LIMIT = 100;
+
+export interface PlanModeSubagentRun {
+	agents: Array<string | null>;
+	updatedAt: number;
+}
+
+export type PlanModeSubagentRuns = Record<string, PlanModeSubagentRun>;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+	return typeof value === "string" && value.trim().length > 0
+		? value.trim()
+		: undefined;
+}
+
+export function recordPlanModeSubagentRun(
+	runs: PlanModeSubagentRuns,
+	event: unknown,
+): boolean {
+	if (!isRecord(event)) return false;
+	const runId = nonEmptyString(event.runId) ?? nonEmptyString(event.id);
+	if (!runId) return false;
+
+	const existing = runs[runId];
+	const agents = [...(existing?.agents ?? [])];
+	let changed = false;
+	const setAgent = (index: number, value: unknown): void => {
+		const agent = nonEmptyString(value);
+		if (!agent || !Number.isInteger(index) || index < 0) return;
+		while (agents.length <= index) agents.push(null);
+		if (agents[index] === agent) return;
+		agents[index] = agent;
+		changed = true;
+	};
+
+	if (Array.isArray(event.agents)) {
+		for (const [index, agent] of event.agents.entries()) setAgent(index, agent);
+	}
+	if (Array.isArray(event.results)) {
+		for (const [fallbackIndex, result] of event.results.entries()) {
+			if (!isRecord(result)) continue;
+			const index =
+				typeof result.index === "number" ? result.index : fallbackIndex;
+			setAgent(index, result.agent);
+		}
+	}
+	const eventIndex = typeof event.taskIndex === "number" ? event.taskIndex : 0;
+	setAgent(eventIndex, event.agent);
+
+	if (!changed) return false;
+	runs[runId] = {
+		agents,
+		updatedAt:
+			typeof event.timestamp === "number" ? event.timestamp : Date.now(),
+	};
+
+	const entries = Object.entries(runs);
+	if (entries.length > PLAN_MODE_SUBAGENT_RUN_LIMIT) {
+		entries
+			.sort(([, left], [, right]) => left.updatedAt - right.updatedAt)
+			.slice(0, entries.length - PLAN_MODE_SUBAGENT_RUN_LIMIT)
+			.forEach(([id]) => delete runs[id]);
+	}
+	return true;
+}
+
+export function restorePlanModeSubagentRuns(
+	entries: unknown[],
+	runs: PlanModeSubagentRuns,
+): boolean {
+	const toolCalls = new Map<string, Record<string, unknown>>();
+	let changed = false;
+	for (const entry of entries) {
+		if (
+			!isRecord(entry) ||
+			entry.type !== "message" ||
+			!isRecord(entry.message)
+		)
+			continue;
+		const message = entry.message;
+		if (message.role === "assistant" && Array.isArray(message.content)) {
+			for (const part of message.content) {
+				if (
+					isRecord(part) &&
+					part.type === "toolCall" &&
+					part.name === "subagent" &&
+					typeof part.id === "string" &&
+					isRecord(part.arguments)
+				) {
+					toolCalls.set(part.id, part.arguments);
+				}
+			}
+			continue;
+		}
+		if (
+			message.role !== "toolResult" ||
+			message.toolName !== "subagent" ||
+			typeof message.toolCallId !== "string" ||
+			!isRecord(message.details)
+		)
+			continue;
+
+		if (recordPlanModeSubagentRun(runs, message.details)) changed = true;
+		const launchInput = toolCalls.get(message.toolCallId);
+		if (!launchInput || launchInput.action !== undefined) continue;
+		const runId =
+			nonEmptyString(message.details.runId) ??
+			nonEmptyString(message.details.asyncId);
+		if (!runId) continue;
+		const agents = new Set<string>();
+		collectAgentNames(launchInput, agents);
+		if (
+			agents.size > 0 &&
+			recordPlanModeSubagentRun(runs, { runId, agents: [...agents] })
+		)
+			changed = true;
+	}
+	return changed;
 }
 
 function collectAgentNames(value: unknown, names: Set<string>): void {
@@ -173,11 +293,65 @@ function findUnsafeSubagentOption(value: unknown): string | undefined {
 	}
 }
 
+function unsafePlanModeAgents(agents: Iterable<string>): string[] {
+	return [...agents].filter(
+		(agent) => !PLAN_MODE_READ_ONLY_SUBAGENTS.has(agent),
+	);
+}
+
+function validatePlanModeSubagentResume(
+	input: Record<string, unknown>,
+	runs: Readonly<PlanModeSubagentRuns>,
+): string | undefined {
+	const unsafeOption = findUnsafeSubagentOption(input);
+	if (unsafeOption) return `${unsafeOption} is disabled`;
+
+	const requestedAgents = new Set<string>();
+	collectAgentNames(input, requestedAgents);
+	const unsafeRequestedAgents = unsafePlanModeAgents(requestedAgents);
+	if (unsafeRequestedAgents.length > 0) {
+		return `only configured read-only agents are allowed; blocked: ${unsafeRequestedAgents.join(", ")}`;
+	}
+
+	const requestedId = nonEmptyString(input.id) ?? nonEmptyString(input.runId);
+	if (!requestedId) return "action 'resume' requires id or runId";
+	const exact = runs[requestedId];
+	const matches = exact
+		? ([[requestedId, exact]] as const)
+		: Object.entries(runs).filter(([id]) => id.startsWith(requestedId));
+	if (matches.length === 0)
+		return `resume target '${requestedId}' is unknown or has no recorded agent metadata`;
+	if (matches.length > 1)
+		return `resume target prefix '${requestedId}' is ambiguous; provide the full run id`;
+
+	const [runId, run] = matches[0];
+	if (!run || !Array.isArray(run.agents) || run.agents.length === 0) {
+		return `resume target '${runId}' has no recorded agent metadata`;
+	}
+	if (input.index !== undefined && !Number.isInteger(input.index)) {
+		return `resume target '${runId}' index must be an integer`;
+	}
+	const targetAgents =
+		typeof input.index === "number" ? [run.agents[input.index]] : run.agents;
+	if (targetAgents.length === 0 || targetAgents.some((agent) => !agent)) {
+		return `resume target '${runId}' has incomplete agent metadata`;
+	}
+	const unsafeTargetAgents = unsafePlanModeAgents(
+		targetAgents.filter((agent): agent is string => typeof agent === "string"),
+	);
+	if (unsafeTargetAgents.length > 0) {
+		return `resume target '${runId}' includes non-read-only agents: ${unsafeTargetAgents.join(", ")}`;
+	}
+}
+
 export function validatePlanModeSubagentCall(
 	input: unknown,
+	runs: Readonly<PlanModeSubagentRuns> = {},
 ): string | undefined {
 	if (!isRecord(input)) return "the request is malformed";
 	if (typeof input.action === "string") {
+		if (input.action === "resume")
+			return validatePlanModeSubagentResume(input, runs);
 		return PLAN_MODE_SAFE_SUBAGENT_ACTIONS.has(input.action)
 			? undefined
 			: `action '${input.action}' is not read-only`;
@@ -190,9 +364,7 @@ export function validatePlanModeSubagentCall(
 	collectAgentNames(input, agents);
 	if (agents.size === 0)
 		return "the request does not name agents whose read-only policy can be verified";
-	const unsafeAgents = [...agents].filter(
-		(agent) => !PLAN_MODE_READ_ONLY_SUBAGENTS.has(agent),
-	);
+	const unsafeAgents = unsafePlanModeAgents(agents);
 	if (unsafeAgents.length > 0)
 		return `only configured read-only agents are allowed; blocked: ${unsafeAgents.join(", ")}`;
 }

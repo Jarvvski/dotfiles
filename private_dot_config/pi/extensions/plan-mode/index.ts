@@ -5,12 +5,20 @@ import {
 	type TextContent,
 } from "@earendil-works/pi-ai";
 import {
+	DynamicBorder,
 	type ExtensionAPI,
 	type ExtensionContext,
 	getAgentDir,
 	SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import { Key } from "@earendil-works/pi-tui";
+import {
+	Container,
+	Key,
+	type SelectItem,
+	SelectList,
+	Text,
+	truncateToWidth,
+} from "@earendil-works/pi-tui";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,6 +26,9 @@ import {
 	extractTodoItems,
 	isSafeCommand,
 	markCompletedSteps,
+	recordPlanModeSubagentRun,
+	restorePlanModeSubagentRuns,
+	type PlanModeSubagentRuns,
 	type TodoItem,
 	validatePlanModeSubagentCall,
 } from "./utils.ts";
@@ -114,6 +125,35 @@ interface PlanModeState {
 	executing: boolean;
 	toolsBeforePlanMode?: string[];
 	modelBeforePlanMode?: ModelSettings;
+	subagentRuns?: PlanModeSubagentRuns;
+}
+
+const TODO_PREVIEW_MAX_LINES = 8;
+const TODO_PREVIEW_COMPLETED_LIMIT = 2;
+const TODO_PREVIEW_PENDING_LIMIT = 5;
+const TODO_DIALOG_MAX_ROWS = 10;
+
+interface TodoPreview {
+	items: TodoItem[];
+	hiddenCount: number;
+}
+
+function getTodoPreview(todos: TodoItem[]): TodoPreview {
+	if (todos.length <= TODO_PREVIEW_MAX_LINES) {
+		return { items: todos, hiddenCount: 0 };
+	}
+
+	const completed = todos
+		.filter((todo) => todo.completed)
+		.sort((left, right) => right.step - left.step)
+		.slice(0, TODO_PREVIEW_COMPLETED_LIMIT)
+		.sort((left, right) => left.step - right.step);
+	const pending = todos
+		.filter((todo) => !todo.completed)
+		.sort((left, right) => left.step - right.step)
+		.slice(0, TODO_PREVIEW_PENDING_LIMIT);
+	const items = [...completed, ...pending];
+	return { items, hiddenCount: todos.length - items.length };
 }
 
 function isThinkingLevel(value: unknown): value is ModelThinkingLevel {
@@ -177,6 +217,8 @@ export default function planMode(pi: ExtensionAPI): void {
 	let toolsBeforePlanMode: string[] | undefined;
 	let modelBeforePlanMode: ModelSettings | undefined;
 	let pendingFollowUp: string | undefined;
+	let subagentRuns: PlanModeSubagentRuns = {};
+	let activeSessionId: string | null | undefined;
 	let config = loadConfig();
 
 	pi.registerFlag("plan", {
@@ -188,19 +230,33 @@ export default function planMode(pi: ExtensionAPI): void {
 	function updateUi(ctx: ExtensionContext): void {
 		if (executing && todos.length > 0) {
 			const done = todos.filter((todo) => todo.completed).length;
+			const preview = getTodoPreview(todos);
 			ctx.ui.setStatus(
 				"plan-mode",
 				ctx.ui.theme.fg("accent", `plan ${done}/${todos.length}`),
 			);
-			ctx.ui.setWidget(
-				"plan-todos",
-				todos.map((todo) =>
-					todo.completed
-						? ctx.ui.theme.fg("success", "✓ ") +
-							ctx.ui.theme.fg("muted", ctx.ui.theme.strikethrough(todo.text))
-						: ctx.ui.theme.fg("muted", "○ ") + todo.text,
-				),
-			);
+			ctx.ui.setWidget("plan-todos", (_tui, theme) => ({
+				render(width: number): string[] {
+					const lines = preview.items.map((todo) =>
+						todo.completed
+							? theme.fg("success", "✓ ") +
+								theme.fg("muted", theme.strikethrough(todo.text))
+							: theme.fg("muted", "○ ") + todo.text,
+					);
+					if (preview.hiddenCount > 0) {
+						lines.push(
+							theme.fg(
+								"muted",
+								`… ${preview.hiddenCount} more - use /todos to view all`,
+							),
+						);
+					}
+					return lines
+						.slice(0, TODO_PREVIEW_MAX_LINES)
+						.map((line) => truncateToWidth(` ${line}`, width, "…"));
+				},
+				invalidate(): void {},
+			}));
 			return;
 		}
 		ctx.ui.setWidget("plan-todos", undefined);
@@ -217,6 +273,7 @@ export default function planMode(pi: ExtensionAPI): void {
 			executing,
 			toolsBeforePlanMode,
 			modelBeforePlanMode,
+			subagentRuns,
 		});
 	}
 
@@ -454,21 +511,111 @@ export default function planMode(pi: ExtensionAPI): void {
 				ctx.ui.notify("No active plan steps.", "info");
 				return;
 			}
-			ctx.ui.notify(
-				todos
-					.map(
-						(todo) =>
-							`${todo.step}. ${todo.completed ? "✓" : "○"} ${todo.text}`,
-					)
-					.join("\n"),
-				"info",
-			);
+
+			if (ctx.mode !== "tui") {
+				ctx.ui.notify(
+					todos
+						.map(
+							(todo) =>
+								`${todo.step}. ${todo.completed ? "✓" : "○"} ${todo.text}`,
+						)
+						.join("\n"),
+					"info",
+				);
+				return;
+			}
+
+			const completed = todos.filter((todo) => todo.completed).length;
+			const items: SelectItem[] = todos.map((todo) => ({
+				value: String(todo.step),
+				label: `${todo.step}. ${todo.completed ? "✓" : "○"} ${todo.text}`,
+			}));
+			await ctx.ui.custom<void>((tui, theme, _keybindings, close) => {
+				const container = new Container();
+				container.addChild(
+					new DynamicBorder((text: string) => theme.fg("accent", text)),
+				);
+				container.addChild(
+					new Text(
+						theme.fg(
+							"accent",
+							theme.bold(`Plan progress ${completed}/${todos.length}`),
+						),
+						1,
+						0,
+					),
+				);
+
+				const list = new SelectList(
+					items,
+					Math.min(items.length, TODO_DIALOG_MAX_ROWS),
+					{
+						selectedPrefix: (text) => theme.fg("accent", text),
+						selectedText: (text) => theme.fg("accent", text),
+						description: (text) => theme.fg("muted", text),
+						scrollInfo: (text) => theme.fg("dim", text),
+						noMatch: (text) => theme.fg("warning", text),
+					},
+				);
+				const currentIndex = todos.findIndex((todo) => !todo.completed);
+				list.setSelectedIndex(
+					currentIndex >= 0 ? currentIndex : Math.max(0, todos.length - 1),
+				);
+				list.onSelect = () => close();
+				list.onCancel = () => close();
+				container.addChild(list);
+				container.addChild(
+					new Text(theme.fg("dim", "Up/Down navigate - Enter/Esc close"), 1, 0),
+				);
+				container.addChild(
+					new DynamicBorder((text: string) => theme.fg("accent", text)),
+				);
+
+				return {
+					render: (width: number) => container.render(width),
+					invalidate: () => container.invalidate(),
+					handleInput: (data: string) => {
+						list.handleInput(data);
+						tui.requestRender();
+					},
+				};
+			});
 		},
 	});
 
 	pi.registerShortcut(Key.ctrlAlt("p"), {
 		description: "Toggle strict plan mode",
 		handler: async (ctx) => toggle(ctx),
+	});
+
+	const recordSubagentEvent = (event: unknown): void => {
+		if (activeSessionId === undefined) return;
+		const eventSessionId =
+			typeof event === "object" &&
+			event !== null &&
+			typeof (event as { sessionId?: unknown }).sessionId === "string"
+				? (event as { sessionId: string }).sessionId
+				: undefined;
+		if (
+			activeSessionId !== null &&
+			eventSessionId &&
+			eventSessionId !== activeSessionId
+		)
+			return;
+		if (recordPlanModeSubagentRun(subagentRuns, event)) persist();
+	};
+	const subagentEventUnsubscribes = [
+		pi.events.on("subagent:async-started", recordSubagentEvent),
+		pi.events.on("subagent:async-complete", recordSubagentEvent),
+		pi.events.on("subagent:foreground-complete", recordSubagentEvent),
+	].filter(
+		(unsubscribe): unsubscribe is () => void =>
+			typeof unsubscribe === "function",
+	);
+
+	pi.on("tool_result", (event) => {
+		if (event.toolName !== "subagent") return;
+		if (recordPlanModeSubagentRun(subagentRuns, event.details)) persist();
 	});
 
 	pi.on("tool_call", async (event) => {
@@ -480,7 +627,7 @@ export default function planMode(pi: ExtensionAPI): void {
 			};
 		}
 		if (event.toolName === "subagent") {
-			const violation = validatePlanModeSubagentCall(event.input);
+			const violation = validatePlanModeSubagentCall(event.input, subagentRuns);
 			if (violation) {
 				return {
 					block: true,
@@ -526,7 +673,7 @@ export default function planMode(pi: ExtensionAPI): void {
 			return {
 				message: {
 					customType: "plan-mode-context",
-					content: `[PI PLAN MODE ACTIVE]\nYou are in strict read-only plan mode.\n\n- Inspect and reason only. Do not modify source files, external services, dependencies, repository state, or infrastructure.\n- Only allowlisted read and analysis tools are active. Shell commands are restricted to conservative read-only forms.\n- You may use the subagent tool to parallelize read-only exploration, research, planning, and review. Call its list action before execution, use only configured read-only agents, and never launch worker or an unknown/custom agent. Do not request worktrees, session sharing, or explicit output/session paths.\n- Never invoke Git. Use only allowlisted read-only jj queries.\n- Do not create worktrees or additional workspaces.\n- Ask targeted clarifying questions with the questionnaire tool when a requirement or design decision is ambiguous.\n- Do not write a plan file. Keep the plan in the session.\n\nEnd with a concrete numbered section exactly under a "Plan:" heading. Do not implement until the user approves through the plan-mode approval dialog.`,
+					content: `[PI PLAN MODE ACTIVE]\nYou are in strict read-only plan mode.\n\n- Inspect and reason only. Do not modify source files, external services, dependencies, repository state, or infrastructure.\n- Only allowlisted read and analysis tools are active. Shell commands are restricted to conservative read-only forms.\n- You may use the subagent tool to parallelize read-only exploration, research, planning, and review. Call its list action before execution, use only configured read-only agents, and never launch worker or an unknown/custom agent. Resume only a tracked run whose selected child is read-only. Do not request worktrees, session sharing, or explicit output/session paths.\n- Never invoke Git. Use only allowlisted read-only jj queries.\n- Do not create worktrees or additional workspaces.\n- Ask targeted clarifying questions with the questionnaire tool when a requirement or design decision is ambiguous.\n- Do not write a plan file. Keep the plan in the session.\n\nEnd with a concrete numbered section exactly under a "Plan:" heading. Do not implement until the user approves through the plan-mode approval dialog.`,
 					display: false,
 				},
 			};
@@ -585,7 +732,7 @@ export default function planMode(pi: ExtensionAPI): void {
 			.map((todo) => `${todo.step}. ${todo.text}`)
 			.join("\n");
 		const choice = await ctx.ui.select(
-			`Plan ready:\n\n${preview}\n\nNext action`,
+			"Plan ready. Review the plan in the transcript above.\n\nNext action",
 			["Approve and execute", "Stay in read-only plan mode", "Refine the plan"],
 		);
 
@@ -625,6 +772,8 @@ export default function planMode(pi: ExtensionAPI): void {
 	pi.on("session_start", async (event, ctx) => {
 		config = loadConfig();
 		modelBeforePlanMode = undefined;
+		subagentRuns = {};
+		activeSessionId = ctx.sessionManager.getSessionId();
 		if (event.reason === "new") {
 			enabled = pi.getFlag("plan") === true;
 			executing = false;
@@ -646,8 +795,10 @@ export default function planMode(pi: ExtensionAPI): void {
 				todos = stateEntry.data.todos ?? [];
 				toolsBeforePlanMode = stateEntry.data.toolsBeforePlanMode;
 				modelBeforePlanMode = stateEntry.data.modelBeforePlanMode;
+				subagentRuns = stateEntry.data.subagentRuns ?? {};
 			}
 		}
+		restorePlanModeSubagentRuns(ctx.sessionManager.getBranch(), subagentRuns);
 		if (enabled) {
 			if (captureModelBeforePlanMode(ctx) && (await activatePlanner(ctx))) {
 				enableTools();
@@ -662,6 +813,8 @@ export default function planMode(pi: ExtensionAPI): void {
 	});
 
 	pi.on("session_shutdown", async (_event, ctx) => {
+		for (const unsubscribe of subagentEventUnsubscribes) unsubscribe();
+		activeSessionId = undefined;
 		if (!enabled || !modelBeforePlanMode) return;
 		await restoreModelBeforePlanMode(ctx);
 	});

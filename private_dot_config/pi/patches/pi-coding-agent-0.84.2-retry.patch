@@ -1,0 +1,16 @@
+--- a/node_modules/@earendil-works/pi-ai/dist/utils/retry.js
++++ b/node_modules/@earendil-works/pi-ai/dist/utils/retry.js
+@@ -27,11 +27,8 @@ const RETRYABLE_PROVIDER_ERROR_PATTERN = buildProviderErrorPattern([
+     "rate.?limit",
+     "too many requests",
+     "429",
+-    "500",
+-    "502",
+-    "503",
+-    "504",
+-    "524",
++    // Any three-digit HTTP 5xx response is a retryable server-side failure.
++    "\\b5\\d{2}\\b",
+     "service.?unavailable",
+     "server.?error",
+     "internal.?error",

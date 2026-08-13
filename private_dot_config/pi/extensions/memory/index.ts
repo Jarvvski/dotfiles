@@ -39,6 +39,7 @@ const root = getMemoryRoot();
 type State = {
 	project: Awaited<ReturnType<typeof findProjectIdentity>>;
 	qmdAvailable: boolean;
+	qmdInitialization?: Promise<void>;
 };
 
 function displayRecord(record: MemoryRecord): string {
@@ -77,12 +78,11 @@ function execFor(pi: ExtensionAPI) {
 
 async function stateFor(
 	ctx: ExtensionContext,
-	pi: ExtensionAPI,
+	project?: State["project"],
 ): Promise<State> {
-	const project = await findProjectIdentity(ctx.cwd);
-	await ensureMemoryDirectories(root, project);
-	const qmd = await ensureQmdCollections(root, project, execFor(pi));
-	return { project, qmdAvailable: qmd.available };
+	const resolvedProject = project ?? (await findProjectIdentity(ctx.cwd));
+	await ensureMemoryDirectories(root, resolvedProject);
+	return { project: resolvedProject, qmdAvailable: false };
 }
 
 function output(ctx: ExtensionContext, message: string): void {
@@ -159,15 +159,40 @@ export default function memoryExtension(pi: ExtensionAPI): void {
 		| { query: string; results: MemorySearchResult[] }
 		| undefined;
 
+	const startQmdInitialization = (target: State): void => {
+		if (target.qmdInitialization) return;
+		target.qmdInitialization = ensureQmdCollections(
+			root,
+			target.project,
+			execFor(pi),
+		)
+			.then((qmd) => {
+				if (state === target) target.qmdAvailable = qmd.available;
+			})
+			.catch(() => {
+				// QMD is optional. Lexical search remains available.
+			});
+	};
+
+	const activateState = async (
+		ctx: ExtensionContext,
+		project?: State["project"],
+	): Promise<State> => {
+		const next = await stateFor(ctx, project);
+		state = next;
+		startQmdInitialization(next);
+		return next;
+	};
+
 	const getState = async (ctx: ExtensionContext): Promise<State> => {
 		const project = await findProjectIdentity(ctx.cwd);
 		if (!state || state.project.root !== project.root)
-			state = await stateFor(ctx, pi);
+			return activateState(ctx, project);
 		return state;
 	};
 
 	pi.on("session_start", async (_event, ctx) => {
-		state = await stateFor(ctx, pi);
+		await activateState(ctx);
 	});
 
 	pi.on("before_agent_start", async (event, ctx) => {
@@ -180,7 +205,7 @@ export default function memoryExtension(pi: ExtensionAPI): void {
 			current.project,
 			prompt,
 			"both",
-			execFor(pi),
+			current.qmdAvailable ? execFor(pi) : undefined,
 			5,
 		);
 		if (results.length > 0) pendingInjection = { query: prompt, results };
@@ -234,7 +259,7 @@ export default function memoryExtension(pi: ExtensionAPI): void {
 				current.project,
 				params.query,
 				scopeFrom(params.scope),
-				execFor(pi),
+				current.qmdAvailable ? execFor(pi) : undefined,
 				params.limit ?? 5,
 			);
 			return {
@@ -383,7 +408,7 @@ export default function memoryExtension(pi: ExtensionAPI): void {
 									current.project,
 									query,
 									scope,
-									execFor(pi),
+									current.qmdAvailable ? execFor(pi) : undefined,
 								),
 							),
 						);

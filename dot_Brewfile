@@ -1,4 +1,5 @@
 tap "cloudflare/cloudflare"
+tap "depot/tap"
 tap "eddieantonio/eddieantonio"
 tap "gdubw/gng"
 tap "hashicorp/tap"
@@ -223,6 +224,10 @@ brew "yq"
 brew "yubico-piv-tool"
 # Shell extension to navigate your filesystem faster
 brew "zoxide"
+# The official CLI for Depot.
+brew "depot/tap/depot", trusted: true
+# Official Language Server Protocol for the Kotlin language
+brew "jetbrains/utils/kotlin-lsp", link: false, trusted: true
 # Enable Windows-like alt-tab
 cask "alt-tab"
 # Utility that prevents the system from going to sleep
