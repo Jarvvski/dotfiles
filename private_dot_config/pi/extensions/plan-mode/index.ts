@@ -30,6 +30,7 @@ import {
 	restorePlanModeSubagentRuns,
 	type PlanModeSubagentRuns,
 	type TodoItem,
+	validatePlanModeMcpCall,
 	validatePlanModeSubagentCall,
 } from "./utils.ts";
 
@@ -102,6 +103,7 @@ const PLAN_ALLOWED_TOOLS = new Set([
 	"find",
 	"ls",
 	"questionnaire",
+	"mcp",
 	"web_search",
 	"get_search_content",
 	"lens_diagnostics",
@@ -626,6 +628,15 @@ export default function planMode(pi: ExtensionAPI): void {
 				reason: `Plan mode is read-only: tool '${event.toolName}' is disabled until the plan is approved.`,
 			};
 		}
+		if (event.toolName === "mcp") {
+			const violation = validatePlanModeMcpCall(event.input);
+			if (violation) {
+				return {
+					block: true,
+					reason: `Plan mode blocked the MCP request because ${violation}. Use MCP only for metadata discovery or allowlisted read-only Notion operations.`,
+				};
+			}
+		}
 		if (event.toolName === "subagent") {
 			const violation = validatePlanModeSubagentCall(event.input, subagentRuns);
 			if (violation) {
@@ -673,7 +684,7 @@ export default function planMode(pi: ExtensionAPI): void {
 			return {
 				message: {
 					customType: "plan-mode-context",
-					content: `[PI PLAN MODE ACTIVE]\nYou are in strict read-only plan mode.\n\n- Inspect and reason only. Do not modify source files, external services, dependencies, repository state, or infrastructure.\n- Only allowlisted read and analysis tools are active. Shell commands are restricted to conservative read-only forms.\n- You may use the subagent tool to parallelize read-only exploration, research, planning, and review. Call its list action before execution, use only configured read-only agents, and never launch worker or an unknown/custom agent. Resume only a tracked run whose selected child is read-only. Do not request worktrees, session sharing, or explicit output/session paths.\n- Never invoke Git. Use only allowlisted read-only jj queries.\n- Do not create worktrees or additional workspaces.\n- Ask targeted clarifying questions with the questionnaire tool when a requirement or design decision is ambiguous.\n- Do not write a plan file. Keep the plan in the session.\n\nEnd with a concrete numbered section exactly under a "Plan:" heading. Do not implement until the user approves through the plan-mode approval dialog.`,
+					content: `[PI PLAN MODE ACTIVE]\nYou are in strict read-only plan mode.\n\n- Inspect and reason only. Do not modify source files, external services, dependencies, repository state, or infrastructure.\n- Only allowlisted read and analysis tools are active. Shell commands are restricted to conservative read-only forms.\n- The mcp gateway allows metadata discovery and allowlisted read-only Notion operations only. MCP connection, authentication, mutation, and non-Notion tool calls are blocked.\n- You may use the subagent tool to parallelize read-only exploration, research, planning, and review. Call its list action before execution, use only configured read-only agents, and never launch worker or an unknown/custom agent. Resume only a tracked run whose selected child is read-only. Do not request worktrees, session sharing, or explicit output/session paths.\n- Never invoke Git. Use only allowlisted read-only jj queries.\n- Do not create worktrees or additional workspaces.\n- Ask targeted clarifying questions with the questionnaire tool when a requirement or design decision is ambiguous.\n- Do not write a plan file. Keep the plan in the session.\n\nEnd with a concrete numbered section exactly under a "Plan:" heading. Do not implement until the user approves through the plan-mode approval dialog.`,
 					display: false,
 				},
 			};

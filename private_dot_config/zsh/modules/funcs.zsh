@@ -1,3 +1,41 @@
+# Generate a cryptographically secure random password.
+function randomPass() {
+  setopt localoptions pipefail
+
+  local length="${1:-20}"
+  local password=""
+  local chunk
+
+  case "$length" in
+    ''|*[!0-9]*|0) 
+      echo "Usage: randomPass [length]" >&2
+      return 1
+      ;;
+  esac
+  if [[ $# -gt 1 ]]; then
+    echo "Usage: randomPass [length]" >&2
+    return 1
+  fi
+  if ! command -v openssl >/dev/null 2>&1; then
+    echo "randomPass: openssl is required" >&2
+    return 1
+  fi
+
+  while (( ${#password} < length )); do
+    chunk=$(openssl rand -base64 64 | LC_ALL=C tr -dc 'A-Za-z0-9_@%+=') || {
+      echo "randomPass: failed to generate random data" >&2
+      return 1
+    }
+    password+="$chunk"
+  done
+
+  if [[ -t 1 ]]; then
+    print -r -- "${password[1,length]}"
+  else
+    print -rn -- "${password[1,length]}"
+  fi
+}
+
 function gdub() {
     git fetch --all --prune;
     for branch in $(git branch -vv | grep ': gone]' | awk '{print $1}');
@@ -25,7 +63,7 @@ function idea() {
 
 function timezsh() {
   shell=${1-$SHELL}
-  for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
+  for _ in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
 }
 
 function mktouch() {

@@ -134,6 +134,24 @@ const PLAN_MODE_SAFE_SUBAGENT_ACTIONS = new Set([
 
 const PLAN_MODE_SUBAGENT_RUN_LIMIT = 100;
 
+export const PLAN_MODE_READ_ONLY_NOTION_MCP_TOOLS: ReadonlySet<string> =
+	new Set([
+		"notion-search",
+		"notion-fetch",
+		"notion-download-attachment",
+		"notion-get-comments",
+		"notion-get-async-task",
+		"notion-get-teams",
+		"notion-get-users",
+		"notion-query-data-sources",
+		"notion-query-meeting-notes",
+		"notion-list-private-pages",
+		"notion-list-shared-pages",
+		"notion-list-favorite-pages",
+		"notion-list-recent-pages",
+		"notion-search-agents",
+	]);
+
 export interface PlanModeSubagentRun {
 	agents: Array<string | null>;
 	updatedAt: number;
@@ -149,6 +167,37 @@ function nonEmptyString(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim().length > 0
 		? value.trim()
 		: undefined;
+}
+
+export function validatePlanModeMcpCall(input: unknown): string | undefined {
+	if (!isRecord(input)) return "the request is malformed";
+	if (input.action !== undefined)
+		return "MCP actions are disabled in plan mode";
+	if (input.connect !== undefined)
+		return "MCP connection requests are disabled in plan mode";
+
+	const server = nonEmptyString(input.server);
+	if (input.server !== undefined && !server)
+		return "the MCP server must be a non-empty string";
+
+	const tool = nonEmptyString(input.tool);
+	if (input.tool !== undefined && !tool)
+		return "the MCP tool must be a non-empty string";
+	if (tool) {
+		if (server && server !== "notion")
+			return `MCP tool calls are limited to the Notion server; blocked server: ${server}`;
+		const originalTool = tool.startsWith("notion_")
+			? tool.slice("notion_".length)
+			: tool;
+		if (!PLAN_MODE_READ_ONLY_NOTION_MCP_TOOLS.has(originalTool))
+			return `MCP tool '${tool}' is not an allowlisted read-only Notion tool`;
+		if (input.search !== undefined || input.describe !== undefined)
+			return "an MCP tool call cannot be combined with search or describe";
+		return;
+	}
+
+	if (input.args !== undefined) return "MCP args require an allowlisted tool";
+	return;
 }
 
 export function recordPlanModeSubagentRun(

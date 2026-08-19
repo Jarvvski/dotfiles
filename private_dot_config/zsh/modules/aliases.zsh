@@ -2,7 +2,6 @@
 alias zshrc="$EDITOR $ZDOTDIR/.zshrc"
 alias czshrc="code $ZDOTDIR/.zshrc"
 alias cpwd="pwd | pbcopy"
-alias randomPass="echo $RANDOM | md5sum | head -c 20; echo;"
 
 alias gnetstat='lsof -Pi | grep -i listen'
 alias gwo='gw openidea'
