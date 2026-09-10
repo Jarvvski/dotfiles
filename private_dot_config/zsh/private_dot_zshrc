@@ -28,12 +28,17 @@ zcomet snippet "$ZDOTDIR/modules/auth.zsh"
 zcomet snippet "$ZDOTDIR/modules/aliases.zsh"
 zcomet snippet "$ZDOTDIR/modules/colima.zsh"
 zcomet snippet "$ZDOTDIR/modules/aws.zsh"
+zcomet snippet "$ZDOTDIR/modules/kitty.zsh"
 zcomet snippet "$ZDOTDIR/modules/completion.zsh"
 
 # Compile auto completions
 FPATH="$(/opt/homebrew/bin/brew --prefix)/share/zsh/site-functions:${FPATH}"
 zcomet compinit
+source <(opencode completion zsh)
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+# Ensure nothing foreign owns TAB before fzf-tab snapshots it as its fallback.
+bindkey '^I' expand-or-complete
 
 # Load fzf-tab plugin (must be after compinit)
 zcomet load Aloxaf/fzf-tab

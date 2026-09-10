@@ -2,7 +2,7 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -30,7 +30,11 @@ let clipboardReadersPromise: Promise<ClipboardReaders> | undefined;
 function loadClipboardReaders(): Promise<ClipboardReaders> {
 	clipboardReadersPromise ??= (async () => {
 		const cliPath = realpathSync(process.argv[1]);
-		const utilsDir = join(dirname(cliPath), "utils");
+		const cliDir = dirname(cliPath);
+		const bundledUtilsDir = join(cliDir, "utils");
+		const utilsDir = existsSync(join(bundledUtilsDir, "clipboard-image.js"))
+			? bundledUtilsDir
+			: join(cliDir, "..", "utils");
 		const imageModule = await import(
 			pathToFileURL(join(utilsDir, "clipboard-image.js")).href
 		);
@@ -96,7 +100,8 @@ Pi workflow policy:
 - Never invoke Git directly. Use Jujutsu (jj) commands only. A Pi-local PATH guard blocks direct Git commands but allows Git subprocesses launched internally by jj and directly by GitHub CLI (gh).
 - Do not create or use additional worktrees or workspaces unless the user explicitly asks. Never set pi-subagents worktree=true because that implementation invokes Git. If isolation is explicitly requested, stop and choose a Jujutsu-compatible approach with the user.
 - Parallelize only read-only exploration, research, planning, and review. Use at most one source-editing worker at a time in the current workspace.
-- The worker agent is the default source-editing subagent. Treat scout, researcher, planner, reviewer, context-builder, oracle, advisor, and delegate as read-only unless the user explicitly requests a different role and no concurrent writer is active.`;
+- The worker agent is the default source-editing subagent. Treat scout, researcher, planner, reviewer, context-builder, oracle, advisor, and delegate as read-only unless the user explicitly requests a different role and no concurrent writer is active.
+- A native runtime gate must approve Pi-spawned subagents with edit, write, or bash before they launch. Approval lasts for the current Pi session. Do not retry a denied launch unless the user explicitly asks to reconsider.`;
 
 export default function workflowPolicy(pi: ExtensionAPI) {
 	let runFailed = false;

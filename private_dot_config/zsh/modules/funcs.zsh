@@ -242,3 +242,7 @@ function gwt() {
     cd "$worktree"
   fi
 }
+
+function frame() {
+  mpv --no-border --loop-playlist=inf --image-display-duration=10 --shuffle --no-auto-window-resize --geometry=2000x1500 --panscan=1.0 --macos-app-activation-policy=accessory "$HOME/Pictures/wallpapers/" >/dev/null 2>&1 &!
+}

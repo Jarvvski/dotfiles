@@ -1,4 +1,6 @@
+tap "anomalyco/tap"
 tap "cloudflare/cloudflare"
+tap "danielgatis/imgcat"
 tap "depot/tap"
 tap "eddieantonio/eddieantonio"
 tap "gdubw/gng"
@@ -70,6 +72,8 @@ brew "doggo"
 brew "duf"
 # More intuitive version of du in rust
 brew "dust"
+# Simple command-line tool for creating clusters on Amazon EKS
+brew "eksctl"
 # Modern, maintained replacement for ls
 brew "eza"
 # Simple, fast and user-friendly alternative to find
@@ -166,6 +170,8 @@ brew "rclone"
 brew "ripgrep"
 # Autoformat shell script source code
 brew "shfmt"
+# Command-line interface for https://speedtest.net bandwidth tests
+brew "speedtest-cli"
 # Command driven spotify player
 brew "spotify_player"
 # Tail multiple Kubernetes pods & their containers
@@ -224,10 +230,14 @@ brew "yq"
 brew "yubico-piv-tool"
 # Shell extension to navigate your filesystem faster
 brew "zoxide"
+# The AI coding agent built for the terminal.
+brew "anomalyco/tap/opencode", trusted: true
 # The official CLI for Depot.
 brew "depot/tap/depot", trusted: true
 # Official Language Server Protocol for the Kotlin language
 brew "jetbrains/utils/kotlin-lsp", link: false, trusted: true
+# Command-line interface for 1Password
+cask "1password-cli"
 # Enable Windows-like alt-tab
 cask "alt-tab"
 # Utility that prevents the system from going to sleep
@@ -260,6 +270,8 @@ cask "jetbrains-toolbox"
 cask "jordanbaird-ice"
 # Keyboard customiser
 cask "karabiner-elements"
+# File archiver
+cask "keka"
 # Official Kotlin Language Server
 cask "kotlin-lsp"
 # App to manage software development and track bugs
@@ -290,3 +302,4 @@ cargo "tree-sitter-cli"
 uv "claude-monitor"
 uv "graphifyy"
 npm "@earendil-works/pi-coding-agent"
+npm "prime-agent"

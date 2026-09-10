@@ -1,26 +1,36 @@
 ---
 name: council
-description: Convene a structured adversarial council for consequential architecture, product, strategy, or tooling decisions with multiple defensible options, substantial uncertainty, or conflicting tradeoffs. Use the council tool only when independent model perspectives and explicit voting would materially improve the decision.
+description: Explain when the human operator should invoke the operator-only /council command for exceptionally deep, consequential questions requiring sustained adversarial analysis, independent research, and explicit voting. Treat council runs as 20+ minute deliberations, never as a fast solution.
 ---
 
 # Council skill
 
-Use the `council` tool when the decision is consequential and ordinary single-agent reasoning is likely to be correlated, incomplete, or too quick. Good candidates include:
+The council is an operator-only `/council` command. Pi agents must not invoke a `council` tool or start a council on their own. If a council is warranted, explain why and ask the human operator to enter `/council <question>` themselves. The default assumption is that a council session will take more than 20 minutes to complete. It is deliberately a slow deliberation process, not a fast solution, shortcut, brainstorming aid, or way to make an ordinary answer look more rigorous.
 
-- Architecture or tooling choices with long-lived consequences.
-- Product or strategy decisions with several defensible paths.
-- Questions involving important tradeoffs between cost, reliability, security, user impact, and future flexibility.
-- Decisions requiring both local project evidence and external research.
-- Situations where adversarial disagreement is useful before committing.
+A question must normally satisfy all of these conditions:
 
-Do not use a council for routine facts, straightforward bugs, ordinary implementation, formatting, naming, or decisions the user has already made. Do not use it merely to make a simple answer look more elaborate.
+- The stakes are unusually high or the consequences are long-lived.
+- There are multiple defensible options with meaningful tradeoffs.
+- The uncertainty cannot be responsibly resolved through ordinary reasoning and targeted research.
+- Independent adversarial perspectives and a recorded vote would materially improve the decision.
+- The operator can wait 20+ minutes for the full process, including research, debate, voting, and reconciliation.
 
-Before calling the tool:
+Good candidates include only unusually deep examples such as:
+
+- Architecture or tooling choices with major, long-lived consequences.
+- Product or strategy decisions that could materially change direction or outcomes.
+- High-stakes decisions involving substantial cost, reliability, security, user impact, or future flexibility tradeoffs.
+- Complex decisions requiring both extensive local project evidence and external research before committing.
+
+Do not use a council for routine facts, straightforward bugs, ordinary implementation, formatting, naming, small planning questions, quick opinions, decisions the user has already made, or any problem where a good answer is needed promptly. An explicit request for a council does not make a shallow question eligible. If the question is not exceptionally deep and consequential, answer or research it normally instead.
+
+Before asking the operator to invoke the command:
 
 1. State a self-contained decision question rather than a vague topic.
 2. Explain briefly why the decision has enough uncertainty or consequence to justify a council.
 3. Include relevant constraints in the question, but do not bias the council toward a preferred answer unless the user has asked for that.
-4. Expect the tool to ask the human for confirmation because a council launches several model runs and may perform two research tasks per member.
+4. Tell the operator that this is a deliberately slow process expected to take 20+ minutes, and do not present it as a quick path to an answer.
+5. Ask the operator to run `/council <question>` themselves. Do not invoke or simulate the command from an agent turn. The command launches several model runs and may perform two research tasks per member.
 
 The council has stable members with distinct lenses: Atlas (systems), Forge (pragmatism), Cassandra (risk), Hearth (human impact), Horizon (innovation), Ledger (evidence and economics), and Bridge (integration). These are analytical biases, not predetermined votes.
 

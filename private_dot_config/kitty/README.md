@@ -12,7 +12,7 @@ Modular config mirroring the WezTerm setup. Moonlight theme, JetBrainsMono font,
 ├── kitty.d/
 │   ├── 01-fonts.conf               # JetBrainsMono Nerd Font, size 16
 │   ├── 02-theme.conf               # Moonlight color scheme
-│   ├── 03-window.conf              # Padding, titlebar, inactive pane dimming
+│   ├── 03-window.conf              # Padding, titlebar, pane borders
 │   ├── 04-tabs.conf                # Bottom tab bar styling
 │   ├── 05-keys.conf                # All keybindings
 │   ├── 06-layouts.conf             # Splits + stack layouts

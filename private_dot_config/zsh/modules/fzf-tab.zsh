@@ -1,8 +1,12 @@
 # fzf-tab configuration
 # This must be loaded AFTER fzf-tab plugin is loaded
 
-# Pass all FZF_DEFAULT_OPTS to fzf-tab for consistent theming
-zstyle ':fzf-tab:*' fzf-flags $(echo $FZF_DEFAULT_OPTS) --height=50%
+# Follow FZF_DEFAULT_OPTS via the supported switch instead of dumping them into
+# fzf-flags (some flags break this plugin). See Aloxaf/fzf-tab#455.
+zstyle ':fzf-tab:*' use-fzf-default-opts yes
+zstyle ':fzf-tab:*' fzf-flags --height=50%
+# Keep the typed path out of the filter query (carapace interop).
+zstyle ':fzf-tab:*' query-string ''
 zstyle ':fzf-tab:*' fzf-pad 4
 
 # Preview for cd command

@@ -1,7 +1,25 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
-    "CLAUDE_STREAM_IDLE_TIMEOUT_MS": "600000"
+    "CLAUDE_STREAM_IDLE_TIMEOUT_MS": "600000",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-pro-latest[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-flash-latest[1m]",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "kimi-fast-latest[1m]",
+    "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": "1",
+    "CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE": "0",
+    "DISABLE_TELEMETRY": "1",
+    "DO_NOT_TRACK": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-flash-latest[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME": "DeepSeek-V4-Pro-0813 (Latest)",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION": "Fireworks serverless (DeepSeek-V4-Pro-0813 (Latest)): $1.32 in / $3.96 out per Mtok ($0.044 cached in).",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME": "DeepSeek-V4-Flash-0731 (Latest)",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION": "Fireworks serverless (DeepSeek-V4-Flash-0731 (Latest)): $0.22 in / $0.66 out per Mtok ($0.007 cached in).",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL_NAME": "Kimi K3 Fast (Latest)",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION": "Fireworks serverless (Kimi K3 Fast (Latest)): $4.5 in / $22.5 out per Mtok ($0.45 cached in). Fast tier.",
+    "ANTHROPIC_BASE_URL": "https://api.fireworks.ai/inference",
+    "ENABLE_TOOL_SEARCH": "true",
+    "ANTHROPIC_CUSTOM_HEADERS": "X-Fireworks-Api-Key: fw_HJ2oR4ZMKmBHDW54YbvWjM\nX-Title: Claude Code\nHTTP-Referer: fireconnect/v0.9.6"
   },
   "permissions": {
     "allow": [
@@ -28,11 +46,14 @@
       "Bash(gh pr *)"
     ],
     "deny": [
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "WebSearch",
+      "WebFetch"
     ],
     "ask": [],
     "defaultMode": "auto"
   },
+  "model": "firerouter[1m]",
   "hooks": {
     "Notification": [
       {
@@ -194,12 +215,14 @@
     "kotlin-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "posthog@claude-plugins-official": true
+    "posthog@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
   "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
+  "verbose": false,
   "remoteControlAtStartup": false,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,

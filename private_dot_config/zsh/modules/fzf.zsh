@@ -22,7 +22,7 @@ zcomet snippet https://raw.githubusercontent.com/junegunn/fzf-git.sh/refs/heads/
 show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; else bat -n --color=always --line-range :500 {}; fi"
 
 export FZF_CTRL_T_OPTS="--preview '$show_file_or_dir_preview'"
-export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
+export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200' --preview-window 'right,50%,border-left'"
 
 # Advanced customization of fzf options via _fzf_comprun function
 # - The first argument to the function is the name of the command.
@@ -67,12 +67,10 @@ export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
 "
 
 cd_to_dir() {
-    local selected_dir
-    selected_dir=$(fd -t d . "$HOME" | fzf +m --height 50% --preview 'tree -C {}')
-    if [[ -n "$selected_dir" ]]; then
-        # Change to the selected directory
-        cd "$selected_dir" || return 1
-    fi
+    local root="${1:-$HOME}" dir
+    dir=$(fd --type d --hidden --exclude .git . "$root" |
+        fzf --height=60% --layout=reverse --preview 'eza --tree --color=always --level=2 {} | head -200' --bind 'right:reload(fd --type d --hidden --exclude .git . {})' --header 'Enter=cd   Right=descend') &&
+        cd -- "$dir"
 }
 
 nvim_to_file() {

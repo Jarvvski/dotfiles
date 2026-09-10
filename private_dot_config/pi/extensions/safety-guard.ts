@@ -1358,6 +1358,203 @@ function requestsPackageWorktree(input: Record<string, unknown>): boolean {
 	return visit(input);
 }
 
+const SUBAGENT_MUTATION_TOOLS = new Set(["bash", "edit", "write"]);
+const SUBAGENT_WRITE_APPROVALS_KEY = "__piSubagentWriteApprovalsV1";
+
+type SubagentAgent = {
+	name: string;
+	tools?: string[];
+};
+
+type SubagentAgentScope = "user" | "project" | "both";
+
+type SubagentDiscoveryModule = {
+	discoverAgents: (
+		cwd: string,
+		scope: SubagentAgentScope,
+	) => { agents: SubagentAgent[] };
+};
+
+type WriteCapableSubagent = {
+	name: string;
+	capabilities: string[];
+};
+
+type ToolCallBlock = {
+	block: true;
+	reason: string;
+};
+
+let subagentDiscoveryModule:
+	| Promise<SubagentDiscoveryModule | undefined>
+	| undefined;
+
+function addSubagentName(names: Set<string>, value: unknown): void {
+	if (typeof value === "string" && value.trim()) names.add(value.trim());
+}
+
+function addAgentNamesFromRecords(names: Set<string>, values: unknown): void {
+	if (!Array.isArray(values)) return;
+	for (const value of values) {
+		if (value && typeof value === "object")
+			addSubagentName(names, (value as Record<string, unknown>).agent);
+	}
+}
+
+function addChainAgentNames(names: Set<string>, chain: unknown): void {
+	if (!Array.isArray(chain)) return;
+	for (const rawStep of chain) {
+		if (!rawStep || typeof rawStep !== "object") continue;
+		const step = rawStep as Record<string, unknown>;
+		addSubagentName(names, step.agent);
+		if (Array.isArray(step.parallel)) {
+			addAgentNamesFromRecords(names, step.parallel);
+		} else if (step.parallel && typeof step.parallel === "object") {
+			addSubagentName(names, (step.parallel as Record<string, unknown>).agent);
+		}
+	}
+}
+
+export function collectSubagentLaunchAgentNames(
+	input: Record<string, unknown>,
+): string[] {
+	const names = new Set<string>();
+	addSubagentName(names, input.agent);
+	addAgentNamesFromRecords(names, input.tasks);
+	addChainAgentNames(names, input.chain);
+	return [...names];
+}
+
+export function subagentHasMutationCapability(
+	agent: Pick<SubagentAgent, "tools">,
+): boolean {
+	if (!agent.tools || agent.tools.length === 0) return true;
+	return agent.tools.some((tool) => SUBAGENT_MUTATION_TOOLS.has(tool));
+}
+
+export function isPotentialSubagentLaunch(
+	input: Record<string, unknown>,
+): boolean {
+	const action = typeof input.action === "string" ? input.action : undefined;
+	if (action === "resume") return true;
+	if (action !== undefined && action !== "schedule" && action !== "append-step")
+		return false;
+	return collectSubagentLaunchAgentNames(input).length > 0;
+}
+
+function approvedSubagentWriteSessions(): Set<string> {
+	const shared = globalThis as typeof globalThis & Record<string, unknown>;
+	const existing = shared[SUBAGENT_WRITE_APPROVALS_KEY];
+	if (existing instanceof Set) return existing as Set<string>;
+	const approvals = new Set<string>();
+	shared[SUBAGENT_WRITE_APPROVALS_KEY] = approvals;
+	return approvals;
+}
+
+function loadSubagentDiscoveryModule(): Promise<
+	SubagentDiscoveryModule | undefined
+> {
+	subagentDiscoveryModule ??= import(
+		"../npm/node_modules/pi-subagents/src/agents/agents.ts"
+	)
+		.then((module) => module as SubagentDiscoveryModule)
+		.catch(() => undefined);
+	return subagentDiscoveryModule;
+}
+
+function subagentScope(value: unknown): SubagentAgentScope {
+	return value === "user" || value === "project" || value === "both"
+		? value
+		: "both";
+}
+
+function mutationCapabilities(agent: SubagentAgent): string[] {
+	if (!agent.tools || agent.tools.length === 0)
+		return ["bash", "edit", "write"];
+	return agent.tools.filter((tool) => SUBAGENT_MUTATION_TOOLS.has(tool));
+}
+
+async function writeCapableSubagents(
+	input: Record<string, unknown>,
+	ctx: ExtensionContext,
+): Promise<WriteCapableSubagent[]> {
+	if (!isPotentialSubagentLaunch(input)) return [];
+	if (input.action === "resume") {
+		return [
+			{
+				name: "resumed subagent",
+				capabilities: ["capabilities retained from the original run"],
+			},
+		];
+	}
+
+	const requestedNames = collectSubagentLaunchAgentNames(input);
+	const discovery = await loadSubagentDiscoveryModule();
+	let configuredAgents: SubagentAgent[] = [];
+	if (discovery) {
+		try {
+			configuredAgents = discovery.discoverAgents(
+				typeof input.cwd === "string" ? input.cwd : ctx.cwd,
+				subagentScope(input.agentScope),
+			).agents;
+		} catch {
+			configuredAgents = [];
+		}
+	}
+
+	return requestedNames.flatMap((name): WriteCapableSubagent[] => {
+		const agent = configuredAgents.find((candidate) => candidate.name === name);
+		if (!agent) {
+			return [
+				{
+					name,
+					capabilities: ["unresolved agent; treated as write-capable"],
+				},
+			];
+		}
+		if (!subagentHasMutationCapability(agent)) return [];
+		return [{ name, capabilities: mutationCapabilities(agent) }];
+	});
+}
+
+function confirmSubagentWriteSession(
+	agents: WriteCapableSubagent[],
+	ctx: ExtensionContext,
+): Promise<boolean> {
+	if (!ctx.hasUI) return Promise.resolve(false);
+	const agentLines = agents.map(
+		(agent) => `- ${agent.name}: ${agent.capabilities.join(", ")}`,
+	);
+	return ctx.ui.confirm(
+		"Allow write-capable subagents?",
+		[
+			"The following Pi-spawned subagents can modify files or run shell commands:",
+			...agentLines,
+			"",
+			"Approval applies to later write-capable launches and resumes in this Pi session. Only one writer may operate in the active workspace at a time.",
+		].join("\n"),
+	);
+}
+
+async function enforceSubagentWriteApproval(
+	input: Record<string, unknown>,
+	ctx: ExtensionContext,
+): Promise<ToolCallBlock | undefined> {
+	const writeCapable = await writeCapableSubagents(input, ctx);
+	const sessionId = ctx.sessionManager.getSessionId();
+	const approvals = approvedSubagentWriteSessions();
+	if (writeCapable.length === 0 || approvals.has(sessionId)) return undefined;
+	if (await confirmSubagentWriteSession(writeCapable, ctx)) {
+		approvals.add(sessionId);
+		return undefined;
+	}
+	return {
+		block: true,
+		reason:
+			"Write-capable subagent launch was not approved. Do not retry unless the user explicitly asks to reconsider.",
+	};
+}
+
 const MCP_MUTATION_TOKEN =
 	/(?:^|[-_])(create|update|delete|remove|send|post|write|save|comment|resolve|archive|invite|assign|link|unlink)(?:$|[-_])/i;
 const MCP_READ_ONLY_TOKEN =
@@ -1992,8 +2189,21 @@ export default function safetyGuard(pi: ExtensionAPI) {
 	});
 
 	pi.on("tool_call", async (event, ctx) => {
-		if (!config.enabled) return;
 		const input = event.input as Record<string, unknown>;
+		if (event.toolName === "subagent") {
+			if (config.enabled && requestsPackageWorktree(input)) {
+				return {
+					block: true,
+					reason:
+						"pi-subagents worktree mode invokes Git and is forbidden. Do not create a worktree or additional workspace.",
+				};
+			}
+
+			const approvalBlock = await enforceSubagentWriteApproval(input, ctx);
+			if (approvalBlock) return approvalBlock;
+		}
+
+		if (!config.enabled) return;
 		const activeModel = ctx.model as ModelIdentity | undefined;
 		if (event.toolName === "bash") {
 			const command = input.command;
@@ -2004,14 +2214,6 @@ export default function safetyGuard(pi: ExtensionAPI) {
 				};
 			}
 		}
-		if (event.toolName === "subagent" && requestsPackageWorktree(input)) {
-			return {
-				block: true,
-				reason:
-					"pi-subagents worktree mode invokes Git and is forbidden. Do not create a worktree or additional workspace.",
-			};
-		}
-
 		let risk: Risk | undefined;
 		if (event.toolName === "bash" && typeof input.command === "string")
 			risk = classifyBash(input.command);

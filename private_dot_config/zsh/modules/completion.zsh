@@ -17,8 +17,9 @@ zstyle ':completion:*:corrections' format '%F{yellow}-- %d (errors: %e) --%f'
 zstyle ':completion:*:messages' format '%F{purple}-- %d --%f'
 zstyle ':completion:*:warnings' format '%F{red}-- no matches found --%f'
 
-# Better completion menu behavior
-zstyle ':completion:*' menu select
+# Better completion menu behavior; menu must be off so fzf-tab can capture the
+# unambiguous prefix (required by Aloxaf/fzf-tab).
+zstyle ':completion:*' menu no
 zstyle ':completion:*' complete-options true
 zstyle ':completion:*' file-sort modification
 

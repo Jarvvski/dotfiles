@@ -4,7 +4,6 @@ zcomet load romkatv/zsh-defer
 # Core plugins
 zcomet load ohmyzsh plugins/gitfast
 zcomet load ohmyzsh plugins/colorize
-zcomet load ohmyzsh plugins/zsh-interactive-cd
 
 # Quality of life plugins
 zcomet load zsh-users/zsh-completions

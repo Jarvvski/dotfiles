@@ -22,3 +22,6 @@ export _ZO_EXCLUDE_DIRS="$HOME/Code/ameba/mono-workspaces/*"
 
 # open files
 ulimit -n 10240
+
+# opencode: raise output token cap above the default 32k clamp
+export OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX=131072

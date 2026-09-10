@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+real="$HOME/.pi-lens/tools/node_modules/.bin/markdownlint-cli2"
+config="$HOME/.markdownlint.json"
+
+for arg in "$@"; do
+  case "$arg" in
+    --config | --config=*) exec "$real" "$@" ;;
+  esac
+done
+
+exec "$real" "$@" --config "$config"

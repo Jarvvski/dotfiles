@@ -8,7 +8,6 @@ import type {
 	ExtensionContext,
 	ScopedModel,
 } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
 import {
 	COUNCIL_STATE_DIR,
 	type CouncilConfig,
@@ -924,8 +923,10 @@ async function handleCouncilStatus(
 }
 
 function registerCouncilCommands(pi: ExtensionAPI): void {
+	// Keep council operator-only: it is intentionally a command, not an LLM-callable tool.
 	pi.registerCommand("council", {
-		description: "Convene an adversarial council for a consequential question",
+		description:
+			"Operator-only: convene an adversarial council for a consequential question",
 		handler: async (args, ctx) => {
 			const question =
 				args.trim() ||
@@ -951,60 +952,6 @@ function registerCouncilCommands(pi: ExtensionAPI): void {
 		description:
 			"Show the arguments, challenges, replies, and vote rationales from a council run",
 		handler: (args, ctx) => showCouncilTranscript(pi, ctx, args),
-	});
-}
-
-function registerCouncilTool(pi: ExtensionAPI): void {
-	pi.registerTool({
-		name: "council",
-		label: "Council",
-		description:
-			"Convene a multi-member adversarial council for a consequential design or strategy question.",
-		promptSnippet:
-			"Convene a human-confirmed adversarial council for a consequential decision",
-		promptGuidelines: [
-			"Use council when a consequential question has several defensible options, substantial uncertainty, or conflicting tradeoffs. Do not use council for routine implementation or facts.",
-		],
-		parameters: Type.Object({
-			question: Type.String(),
-			reason: Type.Optional(Type.String()),
-		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			const completion = await startCouncil(
-				pi,
-				ctx,
-				params.question,
-				params.reason,
-				false,
-			);
-			if (!completion) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Council was not started. The human confirmation gate may have declined it.",
-						},
-					],
-					details: {},
-				};
-			}
-			return {
-				content: [
-					{
-						type: "text",
-						text:
-							completion.manifest?.report ??
-							completion.error ??
-							"Council completed without a report.",
-					},
-				],
-				details: {
-					runId: completion.runId,
-					status: completion.manifest?.status ?? "INCOMPLETE",
-				},
-				...(completion.usage ? { usage: completion.usage } : {}),
-			};
-		},
 	});
 }
 
@@ -1040,6 +987,5 @@ function registerCompletionCleanup(pi: ExtensionAPI): void {
 export default function councilExtension(pi: ExtensionAPI): void {
 	ensureStateDir();
 	registerCouncilCommands(pi);
-	registerCouncilTool(pi);
 	registerCompletionCleanup(pi);
 }
