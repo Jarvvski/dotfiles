@@ -16,6 +16,8 @@ env = { BAT_THEME = "ansi" }
 [keybindings]
 shortcut = "f1"
 f12 = "actions:edit"
+f11 = "actions:open_zed"
+f10 = "actions:copy_path"
 ctrl-up = "actions:goto_parent_dir"
 
 [actions.edit]
@@ -29,3 +31,15 @@ mode = "execute"
 description = "Re-opens tv in the parent directory"
 command = "tv files .."
 mode = "execute"
+
+[actions.open_zed]
+description = "Open the selected entries in Zed"
+command = "zed {split:\\n:..|map:{append:'|prepend:'}|join: }"
+mode = "fork"
+separator = "\n"
+
+[actions.copy_path]
+description = "Copy the selected file path(s) to the clipboard"
+command = "printf '%s\\n' {split:\\n:..|map:{append:'|prepend:'}|join: } | pbcopy"
+mode = "fork"
+separator = "\n"
