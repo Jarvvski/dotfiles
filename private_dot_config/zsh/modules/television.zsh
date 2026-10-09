@@ -15,3 +15,29 @@ _tv_file_widget() {
 }
 zle -N _tv_file_widget
 bindkey '^G' _tv_file_widget
+
+# Pick file(s) with television and open them in nvim.
+# Tab multi-selects; Enter opens all selected as buffers.
+tvf() {
+  emulate -L zsh
+  local -a picks
+  picks=("${(@f)$(tv files --input "$*" 2>/dev/null)}")
+  (( ${#picks[@]} )) && [[ -n "$picks[1]" ]] && nvim -- "${picks[@]}"
+}
+alias fn="tvf"
+
+# ZLE widget: launch the picker, then run nvim on the selection(s).
+_tv_nvim_widget() {
+  emulate -L zsh
+  local -a picks
+  picks=("${(@f)$(tv files 2>/dev/null)}")
+  if (( ${#picks[@]} )) && [[ -n "$picks[1]" ]]; then
+    BUFFER="nvim -- ${(j: :)${(q)picks[@]}}"
+    CURSOR=${#BUFFER}
+    zle accept-line
+  else
+    zle redisplay
+  fi
+}
+zle -N _tv_nvim_widget
+bindkey '^X^F' _tv_nvim_widget
