@@ -11,6 +11,9 @@ zstyle ':fzf-tab:*' fzf-pad 4
 # Hide completion group headers (default 'full' concatenates every group name
 # into a wrapping, color-coded row, e.g. carapace's cargo groups).
 zstyle ':fzf-tab:*' show-group none
+# Drop fzf-tab's leading candidate marker (defaults to '·' whenever a
+# descriptions format is set).
+zstyle ':fzf-tab:*' prefix ''
 
 # Preview for cd command
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --color=always $realpath | head -200'
