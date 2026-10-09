@@ -48,22 +48,22 @@ export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS \
   --ansi \
   --layout=reverse \
   --border=rounded \
-  --color=bg+:-1 \
   --color=bg:-1 \
-  --color=border:#3e68d7 \
-  --color=fg:#c8d3f5 \
+  --color=bg+:#303030 \
   --color=gutter:-1 \
-  --color=header:#ffc777 \
-  --color=hl+:#82aaff \
-  --color=hl:#82aaff \
-  --color=info:#828bb8 \
-  --color=marker:#c099ff \
-  --color=pointer:#ff757f \
-  --color=prompt:#82aaff \
-  --color=query:#c8d3f5:regular \
-  --color=scrollbar:#3e68d7 \
-  --color=separator:#65bcff \
-  --color=spinner:#c099ff \
+  --color=fg:-1 \
+  --color=hl:6 \
+  --color=hl+:14 \
+  --color=info:8 \
+  --color=border:#00c2ff \
+  --color=header:3 \
+  --color=marker:2 \
+  --color=pointer:5 \
+  --color=prompt:#00c2ff \
+  --color=query:-1 \
+  --color=scrollbar:0 \
+  --color=separator:8 \
+  --color=spinner:13 \
 "
 
 cd_to_dir() {
