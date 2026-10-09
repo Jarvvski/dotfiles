@@ -12,10 +12,10 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 # Group completions by type
 zstyle ':completion:*' group-name ''
-zstyle ':completion:*:descriptions' format '%F{cyan}-- %d --%f'
-zstyle ':completion:*:corrections' format '%F{yellow}-- %d (errors: %e) --%f'
-zstyle ':completion:*:messages' format '%F{purple}-- %d --%f'
-zstyle ':completion:*:warnings' format '%F{red}-- no matches found --%f'
+zstyle ':completion:*:descriptions' format '-- %d --'
+zstyle ':completion:*:corrections' format '-- %d (errors: %e) --'
+zstyle ':completion:*:messages' format '-- %d --'
+zstyle ':completion:*:warnings' format '-- no matches found --'
 
 # Better completion menu behavior; menu must be off so fzf-tab can capture the
 # unambiguous prefix (required by Aloxaf/fzf-tab).
