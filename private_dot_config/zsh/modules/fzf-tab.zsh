@@ -8,6 +8,9 @@ zstyle ':fzf-tab:*' fzf-flags --height=50%
 # Keep the typed path out of the filter query (carapace interop).
 zstyle ':fzf-tab:*' query-string ''
 zstyle ':fzf-tab:*' fzf-pad 4
+# Hide completion group headers (default 'full' concatenates every group name
+# into a wrapping, color-coded row, e.g. carapace's cargo groups).
+zstyle ':fzf-tab:*' show-group none
 
 # Preview for cd command
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --color=always $realpath | head -200'
